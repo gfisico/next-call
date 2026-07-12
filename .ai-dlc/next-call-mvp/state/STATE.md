@@ -1,18 +1,17 @@
 # State: next-call — ジャズセッション向け選曲提案アプリ MVP
 
 ## Current Position
-- **Hat:** planner
-- **Unit:** unit-04-recommendation-api
-- **Bolt:** 11
+- **Hat:** integrator
+- **Unit:** （全9ユニット完了）
+- **Bolt:** integration
 
 ## Decisions Made
-- 実行パス: Sequential（Agent Teams無効）
-- unit-01/02/03 完了・マージ済み（テスト計428件、全レビューAPPROVED）
-- dag.sh の複数依存パース不具合（スペース連結を単一名として照合）を発見 → オーケストレーターが依存充足を自前検証して続行（unit-04/08 は実際には ready）
+- 全9ユニット完了・intentブランチへマージ済み
+- unit-09 は builder/reviewer が一度 phantom（虚偽）報告 → オーケストレーターが git 検証で検出し retry、実ファイル生成を確認して APPROVED
 
 ## Blockers
 - なし
 
 ## Metrics
-- Units complete: 3/9
-- Iterations: 11
+- Units complete: 9/9
+- Iterations: 進行中（integration）
