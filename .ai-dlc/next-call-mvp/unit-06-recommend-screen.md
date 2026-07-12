@@ -1,6 +1,6 @@
 ---
-status: pending
-last_updated: ""
+status: in_progress
+last_updated: "2026-07-12T17:53:06Z"
 depends_on: [unit-04-recommendation-api, unit-05-session-screen]
 branch: ai-dlc/next-call-mvp/06-recommend-screen
 discipline: frontend
@@ -14,6 +14,7 @@ deployment:
   target: docker
   artifacts: []
   environments: [production]
+hat: planner
 ---
 
 # unit-06-recommend-screen
