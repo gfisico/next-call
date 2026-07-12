@@ -7,9 +7,31 @@
  */
 import type { EngineConditions, SelectionIntent } from "./types";
 
+function sign(value: number): string {
+  if (value > 0) return "+";
+  if (value < 0) return "-";
+  return "0";
+}
+
 export function conditionSignature(
-  _conditions: EngineConditions,
-  _intent: SelectionIntent,
+  conditions: EngineConditions,
+  intent: SelectionIntent,
 ): string {
-  throw new Error("not implemented");
+  const genres = [...conditions.genreOverride].sort().join(",");
+  const sliders = [
+    intent.rare,
+    intent.longUnplayed,
+    intent.safety,
+    intent.mood,
+    intent.ballad,
+  ]
+    .map(sign)
+    .join("");
+  return [
+    `h=${conditions.horns}`,
+    `b=${conditions.beginner}`,
+    `k1=${conditions.kurobon1Only ? 1 : 0}`,
+    `g=${genres}`,
+    `s=${sliders}`,
+  ].join("|");
 }
