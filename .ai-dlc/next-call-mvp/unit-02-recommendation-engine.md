@@ -9,7 +9,7 @@ workflow: tdd
 ticket: ""
 design_ref: ""
 views: []
-hat: test-writer
+hat: implementer
 ---
 
 # unit-02-recommendation-engine
