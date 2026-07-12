@@ -11,7 +11,15 @@ iterates_on: ""
 created: 2026-07-12
 status: active
 epic: ""
-quality_gates: []
+quality_gates:
+  - name: typecheck
+    command: npm run typecheck
+  - name: lint
+    command: npm run lint
+  - name: tests
+    command: npm run test
+  - name: build
+    command: npm run build
 ---
 
 # next-call — ジャズセッション向け選曲提案アプリ MVP
