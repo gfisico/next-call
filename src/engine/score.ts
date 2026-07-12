@@ -6,6 +6,7 @@
  * （同キー・特殊ジャンル連続・同作曲者・§12.5 vo減点）はすべてスキップする。
  * 属性 null は中立（寄与 0）扱い。
  */
+import { sameNonNull } from "./predicates";
 import { SPECIAL_CONSECUTIVE_GENRES } from "./types";
 import type { EngineConfig, EngineInput, EngineSong, SongStats } from "./types";
 
@@ -139,10 +140,8 @@ export function scoreSong(
   // ---- ルール減点（減点系 config は正値で保持し、減点として適用） ----
 
   // §12.2 直前曲と同じ黒本キー（null は「同じ」とみなさない）
-  if (prev !== null && prev.songKey !== null && song.songKey !== null) {
-    if (song.songKey === prev.songKey) {
-      score -= config.sameKeyPenaltyOverrides[song.songKey] ?? config.sameKeyPenalty;
-    }
+  if (prev !== null && song.songKey !== null && sameNonNull(song.songKey, prev.songKey)) {
+    score -= config.sameKeyPenaltyOverrides[song.songKey] ?? config.sameKeyPenalty;
   }
 
   // §12.3 直前曲と特殊ジャンル・特徴の重複（対象8種のみ。「循環」は対象外）。1種ごとに減点
@@ -160,12 +159,7 @@ export function scoreSong(
   if (song.genres.includes("ブルース")) score -= config.bluesPenalty;
 
   // §12.6 直前曲と同じ作曲者（null 同士は「同じ」とみなさない）
-  if (
-    prev !== null &&
-    prev.composer !== null &&
-    song.composer !== null &&
-    song.composer === prev.composer
-  ) {
+  if (prev !== null && sameNonNull(song.composer, prev.composer)) {
     score -= config.sameComposerPenalty;
   }
 

@@ -4,6 +4,7 @@
  * - 発火した理由が2件未満のときのみ、フォールバック（FALLBACK_*）で2件まで補完
  * - 発火していないルールの理由を捏造しない
  */
+import { isBeginnerFriendly, sameNonNull } from "./predicates";
 import { intentContributions, oldMetric, rareMetric, statsFor } from "./score";
 import { SPECIAL_CONSECUTIVE_GENRES } from "./types";
 import type {
@@ -72,10 +73,8 @@ export function generateReasons(
 
   // キー・構成・特殊ジャンルすべて直前曲と不一致（直前曲なしなら発火しない）
   if (prev !== null) {
-    const keyDiffers =
-      song.songKey === null || prev.songKey === null || song.songKey !== prev.songKey;
-    const formDiffers =
-      song.form === null || prev.form === null || song.form !== prev.form;
+    const keyDiffers = !sameNonNull(song.songKey, prev.songKey);
+    const formDiffers = !sameNonNull(song.form, prev.form);
     const genreDiffers = !SPECIAL_CONSECUTIVE_GENRES.some(
       (g) => song.genres.includes(g) && prev.genres.includes(g),
     );
@@ -111,12 +110,7 @@ export function generateReasons(
   }
 
   // beginner=PRESENT（AND 条件を満たす曲のみ。除外通過曲は常に満たす）
-  if (
-    conditions.beginner === "PRESENT" &&
-    song.isStandard === true &&
-    song.noChartOk === true &&
-    song.simpleForm === true
-  ) {
+  if (conditions.beginner === "PRESENT" && isBeginnerFriendly(song)) {
     fired.push({
       code: "BEGINNER_FRIENDLY",
       text: "超定番・譜面なし対応可・構成が単純で初心者向き",

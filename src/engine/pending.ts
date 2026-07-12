@@ -3,6 +3,7 @@
  * - スコアに一切影響しない。無条件で全保留曲を返す（完全除外該当でも隠さない）
  * - 警告バッジ: 当日演奏済み / 直前曲と同じ構成 / 黒本1条件外 / 編成に合いにくい
  */
+import { sameNonNull } from "./predicates";
 import type {
   EngineConfig,
   EngineInput,
@@ -30,12 +31,7 @@ export function annotatePendingSongs(
     if (playedToday.has(songId)) warnings.push("PLAYED_TODAY");
 
     // 直前曲と同じ構成
-    if (
-      prev !== null &&
-      prev.form !== null &&
-      song.form !== null &&
-      song.form === prev.form
-    ) {
+    if (prev !== null && sameNonNull(song.form, prev.form)) {
       warnings.push("SAME_FORM");
     }
 
