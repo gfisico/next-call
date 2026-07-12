@@ -2,15 +2,26 @@
 
 ## BLOCKER-001: pre-edit-guard がサブエージェントの Edit/Write を全拒否（2026-07-12）
 
-**状況:** /ai-dlc:execute の自律ループで unit-01-app-foundation の planner は完了（計画は state/current-plan.md）。しかし builder サブエージェントは Edit/Write を一切実行できない。
+**状況:** unit-01-app-foundation の planner 完了（state/current-plan.md）。builder はファイル作成不可。
 
-**原因:** ~/.claude/pre-edit-guard.sh (PreToolUse: Edit|Write) は、実行セッションのトランスクリプト内に「アシスタントの【方針提示】→その後のユーザー承認語」を要求する。サブエージェントのトランスクリプトにはユーザー発言（承認）が存在し得ないため、構造的に必ず deny になる。planner も Write をブロックされ dlc_state_save（Bash）で保存した。
+**原因:** ~/.claude/pre-edit-guard.sh は実行セッションのトランスクリプトに【方針提示】+ユーザー承認語を要求するが、サブエージェントのトランスクリプトにはユーザー発言が存在し得ず構造的に必ず deny。
 
-**制約:** グローバル CLAUDE.md は「pre-edit-guard に弾かれた場合、Bash/sed 等での迂回は絶対禁止」と定めるため、builder に Bash ヒアドキュメントでファイル生成させる回避は不可。
+**経過:**
+- ユーザーは案1（フック改修: .ai-dlc/worktrees/ 配下の書き込みを許可する例外追加）を承認（「1でok」）
+- しかし Claude Code のパーミッション分類器が当該編集を自己改変（ガード弱体化）として拒否
+- ガードを Bash 等で書き換える迂回は行わない方針
 
-**解除に必要なユーザー判断（いずれか）:**
-1. CLAUDE_BYPASS_HOOK=1 CLAUDE_BYPASS_REASON=... を設定したセッションで /ai-dlc:execute を再実行（フック自身が持つ正規バイパス。全バイパスはログ記録される）
-2. pre-edit-guard.sh を改修し、AI-DLC の worktree（.ai-dlc/worktrees/ 配下）への書き込みを許可する例外を追加
-3. サブエージェントを使わず、メイン会話で【方針提示】→OK を得てインライン実装（ユニットごとに承認が必要・自律性は失われる）
+**解除手順（ユーザー操作）— いずれか:**
+1. ~/.claude/pre-edit-guard.sh の「# --- bypass」行の直前に次の6行を手動追加:
+   ```bash
+   # --- AI-DLC worktree 例外: .ai-dlc/worktrees/ 配下への書き込みは許可 ---
+   if [[ "$TARGET" == *"/.ai-dlc/worktrees/"* ]]; then
+       log_event "allow" "aidlc-worktree" ""
+       exit 0
+   fi
+   ```
+2. または CLAUDE_BYPASS_HOOK=1 CLAUDE_BYPASS_REASON=ai-dlc実行 でセッション再起動
 
-**ステータス:** 人間の介入待ち。unit-01 は in_progress / hat=builder で停止中。
+**再開手順:** 解除後、/ai-dlc:execute を再実行。iteration.json の status は blocked になっているため、再開時に active へ戻すこと（execute が builder ハットから unit-01 を継続する）。
+
+**ステータス:** 人間の介入待ち（quality-gate はstatus=blockedのため停止を妨げない）。
