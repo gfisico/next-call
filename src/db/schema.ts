@@ -333,3 +333,30 @@ export const settings = sqliteTable("settings", {
   value: text("value").notNull(),
   updatedAt: text("updated_at").notNull().default(utcNow),
 });
+
+/**
+ * import_jobs — CSV インポートの中間状態を保持する作業テーブル（unit-08）
+ *
+ * 4段階フロー（アップロード→プレビュー→ドライラン→コミット）の中間状態を JSON 列で持つ
+ * 使い捨てジョブ。正規化テーブルは持たない（ジョブは短命）。エクスポート対象外
+ * （transient work table。src/server/repositories/export.ts のコメント参照）。
+ */
+export const importJobs = sqliteTable("import_jobs", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  /** インポート種別 */
+  type: text("type", { enum: ["songs", "setlists"] }).notNull(),
+  /** PREVIEW=アップロード直後 / COMMITTED=取込完了 / DISCARDED=破棄 */
+  status: text("status", { enum: ["PREVIEW", "COMMITTED", "DISCARDED"] })
+    .notNull()
+    .default("PREVIEW"),
+  /** 検証済み有効行の JSON 配列（{ line, data } 形式・行番号付き） */
+  parsedRows: text("parsed_rows").notNull().default("[]"),
+  /** バリデーションエラー行の JSON 配列（{ line, reason, raw }） */
+  errors: text("errors").notNull().default("[]"),
+  /** 解決が必要な未知要素の JSON（songs: {} / setlists: { venues, titles }） */
+  unknowns: text("unknowns").notNull().default("{}"),
+  /** 解決内容の JSON（venue is_home マップ + 曲名解決）。未解決なら null */
+  resolutions: text("resolutions"),
+  createdAt: text("created_at").notNull().default(utcNow),
+  updatedAt: text("updated_at").notNull().default(utcNow),
+});

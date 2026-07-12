@@ -3,6 +3,10 @@
  *
  * 全12テーブルを単一 JSON に含める。テーブルを追加した場合はここにも追加すること
  * （tests/api/export.test.ts の EXPORT_TABLE_KEYS が網羅を検証している）。
+ *
+ * 例外: import_jobs（unit-08）は意図的に除外する（transient work table。
+ * アップロード〜コミットの中間状態を保持する使い捨てジョブであり、
+ * バックアップ/復旧の対象データではないため）。
  */
 import { readFileSync } from "node:fs";
 import path from "node:path";

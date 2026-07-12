@@ -15,6 +15,13 @@
       "when": 1783863271335,
       "tag": "0001_careful_daredevil",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1783877025586,
+      "tag": "0002_aberrant_senator_kelly",
+      "breakpoints": true
     }
   ]
 }
