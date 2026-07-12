@@ -29,3 +29,7 @@
 - **unit-07（マスタ設定画面 = インポートウィザードUI）**: インポートAPIが利用可能。4段階: POST /api/import/[type]（songs|setlists、multipart）→ POST /api/import/jobs/[jobId]/resolutions（venue区分 + title解決 match/create_stub/skip）→ GET /api/import/jobs/[jobId]/dry-run（差分サマリ）→ POST /api/import/jobs/[jobId]/commit（recalc_has_played オプション）→ DELETE /api/import/jobs/[jobId]。**ジョブ系は import/jobs/[jobId] 配下**（Next.js動的セグメント制約）。プレビューレスポンスに未知venue一覧・title不一致+近似候補3件が含まれる
 - 抽出スクリプト scripts/extract-excel.ts（CLI・exceljs devDep）。実データはコミットしない
 - normalize-title 共有・ImportJob は export 対象外の使い捨てテーブル
+
+## from unit-06（選曲支援画面完成）
+- **unit-07（設定画面）**: 共有 iOS風スライダー src/components/ui/ios-slider.tsx を再利用（props: name/leftLabel/rightLabel/value(-2..2)/onChange/ariaLabel?、role=slider・5段階スナップ・中央ティント）。設定画面のスライダーも同スタイルに統一すること
+- /sessions/[id]/recommend 画面完成。「次の曲を考える」導線是正済み（/suggest → active session の recommend へ）
