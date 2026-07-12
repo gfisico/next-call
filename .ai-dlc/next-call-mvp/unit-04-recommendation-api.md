@@ -1,6 +1,6 @@
 ---
-status: in_progress
-last_updated: "2026-07-12T13:20:02Z"
+status: completed
+last_updated: "2026-07-12T16:16:39Z"
 depends_on: [unit-01-app-foundation, unit-02-recommendation-engine, unit-03-master-session-api]
 branch: ai-dlc/next-call-mvp/04-recommendation-api
 discipline: backend
@@ -57,15 +57,15 @@ RecommendationRequest / RecommendationCandidate（履歴）、SelectionIntent（
 5. **インデックス**: performances(song_id), performances(session_id, order_index), recommendation_candidates(request_id), recommendation_requests(created_at, condition_signature) 等、集計に必要なインデックスを追加マイグレーションで定義
 
 ## Success Criteria
-- [ ] POST recommendations が EngineInput を正しく組み立てる: 集計値（登場回数・最終演奏日・コール回数・上位10曲・ジャンル比率・当日演奏済み・直前曲）それぞれに既知データからの期待値テストがある
-- [ ] 推薦実行のたびに RecommendationRequest/Candidates が保存され、直後の再実行で繰り返し減点が効く（統合テスト）
-- [ ] 意図値が保存され、defaults エンドポイントが前回値を返す。初回は中央値+seasonal推奨を返す
-- [ ] 保留曲: 追加→一覧（別セッションでも取得可）→ called_by_me=true の演奏登録で自動解除、の統合テストがある
-- [ ] 保留曲が完全除外に該当する場合も一覧から消えず、警告バッジ（当日演奏済み等）が付与される
-- [ ] seed が保存され、同一 request の結果を再現できる
-- [ ] シードデータ（曲500・演奏記録5,000件）での応答時間テスト: p95 < 2秒
-- [ ] エラーは unit-03 の統一形式に従い、ACTIVE でないセッションへの推薦要求は 409（observable/deployable: 既存コンテナ構成のまま、新規環境変数なし）
-- [ ] インポート済み履歴（unit-08）が登場回数・久しぶり度の集計に反映される結合テストがある（unit-08 完成後にCIで有効化してよい。unit-08 から移設した基準）
+- [x] POST recommendations が EngineInput を正しく組み立てる: 集計値（登場回数・最終演奏日・コール回数・上位10曲・ジャンル比率・当日演奏済み・直前曲）それぞれに既知データからの期待値テストがある
+- [x] 推薦実行のたびに RecommendationRequest/Candidates が保存され、直後の再実行で繰り返し減点が効く（統合テスト）
+- [x] 意図値が保存され、defaults エンドポイントが前回値を返す。初回は中央値+seasonal推奨を返す
+- [x] 保留曲: 追加→一覧（別セッションでも取得可）→ called_by_me=true の演奏登録で自動解除、の統合テストがある
+- [x] 保留曲が完全除外に該当する場合も一覧から消えず、警告バッジ（当日演奏済み等）が付与される
+- [x] seed が保存され、同一 request の結果を再現できる
+- [x] シードデータ（曲500・演奏記録5,000件）での応答時間テスト: p95 < 2秒
+- [x] エラーは unit-03 の統一形式に従い、ACTIVE でないセッションへの推薦要求は 409（observable/deployable: 既存コンテナ構成のまま、新規環境変数なし）
+- [x] インポート済み履歴（unit-08）が登場回数・久しぶり度の集計に反映される結合テストがある（unit-08 完成後にCIで有効化してよい。unit-08 から移設した基準）
 
 ## Risks
 - **集計クエリの性能**: N+1 や全曲スキャンの重複で遅くなる。Mitigation: 集計は曲単位に JOIN/GROUP BY でまとめ、応答時間テストをCIで実行
