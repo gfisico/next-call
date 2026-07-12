@@ -43,10 +43,10 @@ RecommendationRequest / RecommendationCandidate（履歴）、SelectionIntent（
 
 1. **`POST /api/sessions/:id/recommendations`** — 推薦の実行
    - 入力（zod）: 編成条件 `{ horns: ONE|MULTI|UNKNOWN, beginner: NONE|PRESENT|UNKNOWN }`、制約 `{ kurobon1_only: boolean, genre_override?: string[] }`、意図 `{ rare, fresh, safety, mood, ballad: -2..2, seasonal: boolean, listener: boolean }`
-   - 処理: (a) 集計クエリ群で EngineInput を組み立て（現在季節はセッション日付+設定の区切り月から算出。1曲目なら seasonal の推奨初期値ON情報を返すのは unit-06 の責務）→ (b) `recommend(input, config, seed)` 実行（seed は保存して再現可能に）→ (c) RecommendationRequest + Candidates を保存（condition_signature 含む）→ (d) 意図値を `intent.last_values` に保存 → (e) 結果を返す
+   - 処理: (a) 集計クエリ群で EngineInput を組み立て（現在季節はセッション日付+設定の区切り月から算出）→ (b) `recommend(input, config, seed)` 実行（seed は保存して再現可能に）→ (c) RecommendationRequest + Candidates を保存（condition_signature 含む）→ (d) 意図値を `intent.last_values` に保存 → (e) 結果を返す
    - レスポンス: 通常候補（song, score, reasons[], is_pending バッジ）、条件別候補（condition_label 付き）、保留曲一覧（警告バッジ付き）、isSparse（候補が少ない）
    - **性能**: 曲500・演奏記録5,000件で p95 < 2秒（成功基準）。集計はインデックスと単一クエリ化で担保
-2. **`GET /api/sessions/:id/recommendations/defaults`** — 選曲支援画面の初期値: 前回意図値（`intent.last_values`、無ければ全て中央/OFF）+ 1曲目なら seasonal=ON の推奨（仕様§9.7）+ 現在の編成条件既定（UNKNOWN）
+2. **`GET /api/sessions/:id/recommendations/defaults`** — 選曲支援画面の初期値: 前回意図値（`intent.last_values`、無ければ全て中央/OFF）+ `suggest_seasonal_on: boolean`（1曲目のとき true。仕様§9.7。APIはフラグを返すだけで、初期値への適用は unit-06 のUIが行う）+ 編成条件既定（UNKNOWN）
 3. **保留曲API**
    - `GET /api/pending-songs` — 一覧（曲情報込み。セッションをまたいで保持）
    - `POST /api/pending-songs` — 追加（song_id。重複は冪等に成功）
@@ -75,4 +75,5 @@ RecommendationRequest / RecommendationCandidate（履歴）、SelectionIntent（
 
 ## Notes
 - condition_signature の生成は unit-02 の condition-signature.ts を使用（重複実装しない）
-- 「珍しい曲」の集計期間・母店区分は設定値（engine.rare_window_days 等）を参照
+- 「珍しい曲」の集計期間・母店区分は設定値（engine.appearance_window_days 等、discovery.md Provisional Values のキー名に従う）を参照
+- 意図フィールド名はAPI契約として rare, fresh, safety, mood, ballad を正とする（discovery.md の long_unplayed は fresh に対応）

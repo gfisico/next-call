@@ -177,7 +177,7 @@ key-value ストア。§21の全暫定値（スコア重み・減点強度・集
 ### Stage 3: 強制条件
 
 - kurobon1_only は Stage 1 で除外済み
-- genre_override（§10）: 指定時は該当ジャンルへの**フィルタ**（Provisional。加点方式ではない）。指定時は低頻度ジャンル減点を無効化
+- genre_override（§10）: **強い加点**（ユーザー確定。フィルタではない）— 指定ジャンル該当曲に `engine.genre_override_bonus`（既定 +15）を加点し、指定ジャンルの低頻度ジャンル減点を無効化。他ジャンルの曲も候補に残る
 
 ### Stage 4: スコアリング
 
@@ -210,7 +210,8 @@ key-value ストア。§21の全暫定値（スコア重み・減点強度・集
 | 直前曲と同じ作曲者 | −5（やや減点。除外しない） | §12.6 |
 | 累計コール回数 上位10曲 | −12（beginner=PRESENT または safety≤−1 で半減 −6） | §12.7 |
 | 低頻度ジャンル（自分のコール比率 < 5% のジャンル） | −8（当該曲の意図由来プラス寄与合計 ≥ +10 なら免除 = 「条件に十分合う場合だけ候補へ戻す」§10.4） | §10.3–10.4 |
-| horns=MULTI の歌もの | −15 | §8.3/§12.5 |
+| horns=MULTI の歌もの | −15 | §8.3 |
+| 直前曲のフロント編成に vo あり → 歌もの曲 | −15（フロント編成未入力時はスキップ） | §12.5（ドメインレビュー確定: voで判定） |
 
 ### Stage 5: 繰り返し減点（§14.3–14.4）
 
@@ -276,7 +277,9 @@ horns=UNKNOWN → horns=ONE と horns=MULTI の2ブランチ、beginner=UNKNOWN 
 | 9 | ランダム抽出の重み | softmax: exp((score−max)/τ)、τ=5 | `engine.random_temperature = 5` |
 | 10 | 推薦履歴による減点期間 | 前回提示 −12 / 直近5回(30日) −6 / 同条件3回以上 追加−6。候補<8で半減 | `engine.repeat_penalties = {...}` / `engine.repeat_window_days = 30` / `engine.relax_pool_threshold = 8` |
 | 11 | 通常候補の表示数 | 3曲（設定で1–5） | `engine.candidate_count = 3` |
-| 12 | 保留曲コール時の自動解除 | 自動解除しない。コール登録時に「保留を解除しますか？」確認ダイアログ | `pending.auto_release_on_call = false` |
+| 12 | 保留曲コール時の自動解除 | **自動で解除する**（ユーザー確定・ドメインモデルレビュー） | `pending.auto_release_on_call = true` |
+| 15 | ジャンル上書きの加点値（ユーザー確定: フィルタでなく強い加点） | 指定ジャンル該当曲に +15。指定ジャンルの低頻度減点は無効化 | `engine.genre_override_bonus = 15` |
+| 16 | §12.5 直前曲ヴォーカル後の歌もの減点 | 直前Performanceのフロント編成に vo が含まれる場合、歌もの属性の曲に −15（フロント編成未入力時はスキップ） | `engine.after_vocal_vocal_penalty = -15` |
 | 13 | 季節曲のPiaScore移行 | エクスポート手段がないため、春夏秋冬セットリストの曲名を手動転記し、曲マスターCSVの season 列で投入 | - |
 | 14 | 低頻度ジャンルを候補に戻す条件 | 低頻度判定: 自分のコール比率<5%。当該曲の意図由来プラス寄与合計 ≥ +10、またはジャンル上書き指定時に減点免除 | `engine.low_freq_threshold = 0.05` / `engine.low_freq_penalty = 8` / `engine.low_freq_waiver_bonus = 10` |
 
@@ -421,6 +424,7 @@ date,venue_name,order,title,participated,instrument,called_by_me,no_chart,memo
 
 - `date + venue_name` でセッションを自動生成（同一組は1セッションに集約、order で並び順）
 - instrument: `sax / piano / 空`（participated=0 なら空）
+- front_instruments: `|` 区切りの楽器コード（例: `vo|as|as`、順序保持・重複可・省略可）※Excel抽出スクリプトが Logs列から生成
 - venue_name が未登録の場合: プレビュー画面で某店/某店以外の区分をまとめて確定してから取込
 
 ### インポートフロー（4段階）
