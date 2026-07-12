@@ -1,6 +1,6 @@
 ---
-status: pending
-last_updated: ""
+status: in_progress
+last_updated: "2026-07-12T17:11:29Z"
 depends_on: [unit-01-app-foundation, unit-03-master-session-api]
 branch: ai-dlc/next-call-mvp/08-csv-import-api
 discipline: backend
@@ -22,6 +22,7 @@ operations:
   runbooks: []
   rollback: "取込は単一トランザクション。失敗時は自動ロールバック、成功後の取り消しはバックアップ/エクスポートから復旧"
   scaling: "単一ユーザー。スケーリング不要"
+hat: planner
 ---
 
 # unit-08-csv-import-api
