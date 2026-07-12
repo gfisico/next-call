@@ -56,7 +56,7 @@ infrastructure - This unit will be executed by general-purpose agents with IaC/p
    - リストア手順: `scripts/restore.sh <backup-file>`（app停止→展開→整合性チェック(PRAGMA integrity_check)→配置→app起動）
    - バックアップ検証: backup.sh は作成後に gunzip -t と integrity_check を実行し、失敗時は非ゼロ終了+ログ
 5. **運用ドキュメント**（docs/ops.md）: 初回セットアップ手順（VPS要件、.env、compose 起動、Google OAuth リダイレクトURI設定、cron登録）、デプロイ・ロールバック手順（:sha タグ指定）、バックアップ/ピン留め/リストア手順、ログ確認（docker compose logs）
-6. **VPS固有値の扱い**: ドメイン名・VPSホストは実装時にユーザーへ確認して設定する（Open Question）。Secrets 未設定時は deploy ジョブをスキップし quality/image のみ通す（フォークやSecrets未設定でもCIが赤くならない）
+6. **VPS固有値の扱い**: デプロイ先は **Xserver VPS**（ユーザー確定。KVM・root権限・Docker利用可）。OSは Ubuntu LTS を推奨。docs/ops.md に Xserver VPS 固有の手順を含める: 管理パネルの**パケットフィルターで 22/80/443 を開放**、OSイメージ選択、SSH鍵登録。ドメイン名・ホストIPは実装時にユーザーへ確認して設定する。Secrets 未設定時は deploy ジョブをスキップし quality/image のみ通す（フォークやSecrets未設定でもCIが赤くならない）
 
 ## Success Criteria
 - [ ] `docker build` がローカル/CIで成功し、コンテナ起動で自動マイグレーション+ /api/health が 200 を返す（deployable）
@@ -68,7 +68,7 @@ infrastructure - This unit will be executed by general-purpose agents with IaC/p
 - [ ] docs/ops.md に初回セットアップ〜リストアまでの手順が揃っている（人間がそのまま実行できる粒度）
 
 ## Risks
-- **VPS環境の未知**（OS・既存リバプロ・ドメイン・GHCR到達性が未確認: Open Question）: 影響: compose/Caddy構成の手直し。Mitigation: 実装時にユーザーへVPS詳細を確認。既存Nginxがある場合はCaddyの代わりにNginx設定例を docs/ops.md に併記
+- **VPS環境の詳細**: デプロイ先は Xserver VPS で確定（Docker/compose/Caddy/cron すべて利用可、非互換なし）。残る未確定はドメイン名・ホストIP・OSバージョン選択のみ。Mitigation: 実装時に確認。パケットフィルター（80/443/SSH開放）の設定漏れを ops.md のチェックリストに含める
 - **SQLiteバックアップの整合性**: 稼働中コピーの破損。Mitigation: cp でなく sqlite3 .backup API + 検証を必須化
 - **cron の失権**: バックアップが止まっても気づかない。Mitigation: backup.sh がログを残し、docs/ops.md に「月1でバックアップ日付を確認」を運用チェックとして明記（MVPでは通知連携なし）
 
