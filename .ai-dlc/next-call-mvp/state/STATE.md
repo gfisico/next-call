@@ -2,18 +2,17 @@
 
 ## Current Position
 - **Hat:** planner
-- **Unit:** unit-03-master-session-api
-- **Bolt:** 8
+- **Unit:** unit-04-recommendation-api
+- **Bolt:** 11
 
 ## Decisions Made
 - 実行パス: Sequential（Agent Teams無効）
-- unit-01 完了（APPROVED 7/7・86テスト）→ マージ済み
-- unit-02 完了（tdd: RED200→GREEN→REFACTOR、APPROVED 10/10・286テスト・カバレッジ99.3%）→ マージ済み
-- ユニットworktreeは intent ブランチ起点で作成
+- unit-01/02/03 完了・マージ済み（テスト計428件、全レビューAPPROVED）
+- dag.sh の複数依存パース不具合（スペース連結を単一名として照合）を発見 → オーケストレーターが依存充足を自前検証して続行（unit-04/08 は実際には ready）
 
 ## Blockers
 - なし
 
 ## Metrics
-- Units complete: 2/9
-- Iterations: 8
+- Units complete: 3/9
+- Iterations: 11

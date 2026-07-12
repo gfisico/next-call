@@ -1,6 +1,6 @@
 {
-  "iteration": 10,
-  "hat": "reviewer",
+  "iteration": 11,
+  "hat": "planner",
   "workflowName": "default",
   "workflow": [
     "planner",
@@ -9,5 +9,5 @@
   ],
   "status": "active",
   "targetUnit": "",
-  "currentUnit": "unit-03-master-session-api"
+  "currentUnit": "unit-04-recommendation-api"
 }

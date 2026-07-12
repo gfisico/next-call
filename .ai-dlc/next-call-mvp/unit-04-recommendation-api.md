@@ -1,6 +1,6 @@
 ---
-status: pending
-last_updated: ""
+status: in_progress
+last_updated: "2026-07-12T13:20:02Z"
 depends_on: [unit-01-app-foundation, unit-02-recommendation-engine, unit-03-master-session-api]
 branch: ai-dlc/next-call-mvp/04-recommendation-api
 discipline: backend
@@ -22,6 +22,7 @@ operations:
   runbooks: []
   rollback: "ステートレスなAPI層。直前イメージへの切替のみでロールバック可"
   scaling: "単一ユーザー。スケーリング不要"
+hat: planner
 ---
 
 # unit-04-recommendation-api
