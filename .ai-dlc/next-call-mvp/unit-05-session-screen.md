@@ -14,7 +14,7 @@ deployment:
   target: docker
   artifacts: []
   environments: [production]
-hat: planner
+hat: builder
 ---
 
 # unit-05-session-screen
