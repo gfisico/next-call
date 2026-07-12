@@ -9,9 +9,13 @@
  */
 import type {
   Instrument,
+  PendingSongEntry,
   PerformanceCreatePayload,
   PerformanceUpdatePayload,
   PerformanceWithFront,
+  RecommendationDefaults,
+  RecommendationRequestPayload,
+  RecommendationResult,
   SessionDetail,
   SessionPatchPayload,
   SessionStartPayload,
@@ -178,3 +182,33 @@ export const quickCreateSong = (title: string) =>
     method: "POST",
     ...jsonBody({ title }),
   }).then((b) => b.song);
+
+// --- 推薦（unit-04 API・unit-06 選曲支援画面） ------------------------------
+
+export const fetchRecommendationDefaults = (sessionId: number) =>
+  apiFetch<{ defaults: RecommendationDefaults }>(
+    `/api/sessions/${sessionId}/recommendations/defaults`,
+  ).then((b) => b.defaults);
+
+export const postRecommendation = (
+  sessionId: number,
+  payload: RecommendationRequestPayload,
+) =>
+  apiFetch<{ recommendation: RecommendationResult }>(
+    `/api/sessions/${sessionId}/recommendations`,
+    { method: "POST", ...jsonBody(payload) },
+  ).then((b) => b.recommendation);
+
+export const fetchPendingSongs = () =>
+  apiFetch<{ pendingSongs: PendingSongEntry[] }>("/api/pending-songs").then(
+    (b) => b.pendingSongs,
+  );
+
+export const addPendingSong = (songId: number) =>
+  apiFetch<{ pendingSong: PendingSongEntry }>("/api/pending-songs", {
+    method: "POST",
+    ...jsonBody({ songId }),
+  }).then((b) => b.pendingSong);
+
+export const removePendingSong = (songId: number) =>
+  apiFetch<void>(`/api/pending-songs/${songId}`, { method: "DELETE" });
