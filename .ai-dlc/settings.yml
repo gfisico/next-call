@@ -1,0 +1,25 @@
+# AI-DLC project settings
+# Precedence: unit frontmatter > intent settings (.ai-dlc/{intent}/settings.yml) > this file
+
+git:
+  change_strategy: intent
+  default_branch: main
+  auto_merge: true
+  elaboration_review: false
+
+# Browser-based review UI at elaboration gates (ai-dlc-review MCP server)
+visual_review: true
+
+granularity: standard
+
+# Announcement formats generated when an intent completes
+default_announcements: [changelog]
+
+# Iteration passes for new intents: behavioral spec first, then implementation
+default_passes: [product, dev]
+
+# Core agents (security, performance, architecture, correctness, test_quality) are always on
+review_agents:
+  data_integrity: true
+  accessibility: true
+  api_contract: true
