@@ -11,7 +11,8 @@
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate.ts",
-    "db:seed": "tsx scripts/seed.ts"
+    "db:seed": "tsx scripts/seed.ts",
+    "extract:excel": "tsx scripts/extract-excel.ts"
   },
   "dependencies": {
     "better-sqlite3": "^12.11.1",

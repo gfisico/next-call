@@ -56,6 +56,17 @@ export function getRequest(url: string): Request {
   return new Request(`http://localhost${url}`);
 }
 
+/** multipart/form-data で CSV をアップロードするリクエスト（unit-08 インポート用） */
+export function csvUploadRequest(
+  url: string,
+  csvText: string,
+  filename = "import.csv",
+): Request {
+  const fd = new FormData();
+  fd.append("file", new File([csvText], filename, { type: "text/csv" }));
+  return new Request(`http://localhost${url}`, { method: "POST", body: fd });
+}
+
 /** Next.js 15 dynamic route の第 2 引数（params は Promise） */
 export function routeParams<P extends Record<string, string>>(
   params: P,
