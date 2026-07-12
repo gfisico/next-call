@@ -14,7 +14,7 @@ deployment:
   target: docker
   artifacts: []
   environments: [production]
-hat: planner
+hat: builder
 ---
 
 # unit-06-recommend-screen
