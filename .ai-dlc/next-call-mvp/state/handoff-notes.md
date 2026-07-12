@@ -33,3 +33,8 @@
 ## from unit-06（選曲支援画面完成）
 - **unit-07（設定画面）**: 共有 iOS風スライダー src/components/ui/ios-slider.tsx を再利用（props: name/leftLabel/rightLabel/value(-2..2)/onChange/ariaLabel?、role=slider・5段階スナップ・中央ティント）。設定画面のスライダーも同スタイルに統一すること
 - /sessions/[id]/recommend 画面完成。「次の曲を考える」導線是正済み（/suggest → active session の recommend へ）
+
+## from unit-07（マスタ設定画面完成）
+- **フォローアップ候補（非ブロッキング）**: 一部スカラー engine.* キー（low_freq_penalty/waiver/threshold、top_called_n/penalty、long_unplayed_days、master.default_level、first_song_seasonal_default）が設定画面エディタ未公開。ワイヤーフレームの5グループはカバー済みだが、運用調整の余地を広げたいなら followup で追加
+- インポートウィザードの再開は sessionStorage 依存（別端末再開には unit-08 に GET jobs API 追加が必要）
+- 全9画面完成: /、/sessions、/sessions/[id]、/sessions/[id]/recommend、/songs、/songs/[id]、/songs/new、/settings、/settings/import

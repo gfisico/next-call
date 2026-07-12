@@ -1,6 +1,6 @@
 ---
-status: in_progress
-last_updated: "2026-07-12T18:16:28Z"
+status: completed
+last_updated: "2026-07-12T18:58:08Z"
 depends_on: [unit-03-master-session-api, unit-08-csv-import-api]
 branch: ai-dlc/next-call-mvp/07-master-settings-screen
 discipline: frontend
@@ -59,14 +59,14 @@ discovery.md「UI Mockup: 曲マスター / インポート / 設定（概要）
 5. **アクセシビリティ・レスポンシブ**: モバイル最優先だが、マスター整備・インポートはPC利用も想定し、テーブルは overflow-x-auto で崩さない（design_rule §6.5/§8）
 
 ## Success Criteria
-- [ ] 曲マスター一覧の検索・各フィルタ・needs_review ショートカットが機能する（APIモックテスト）
-- [ ] 曲編集で全属性（ジャンル複数選択含む）が保存でき、needs_review が解除できる
-- [ ] 参照中の曲の削除で 409 エラーメッセージが表示される
-- [ ] 設定画面で engine.* の値を変更・保存でき、「既定値に戻す」が機能する
-- [ ] インポートウィザード4段階が一連で動作する: エラー行表示 → 店舗区分確定 → 曲名解決（match/stub/skip） → ドライラン差分 → コミット結果（APIモックで全分岐をテスト）
-- [ ] エクスポートがファイルダウンロードとして機能する
-- [ ] 375px（モバイル）と 1024px（PC）の両方でレイアウトが崩れない
-- [ ] design_rule.md 準拠（テーブル・フォーム・バッジ・トーストの実装規約）（deployable: 追加インフラなし）
+- [x] 曲マスター一覧の検索・各フィルタ・needs_review ショートカットが機能する（APIモックテスト）
+- [x] 曲編集で全属性（ジャンル複数選択含む）が保存でき、needs_review が解除できる
+- [x] 参照中の曲の削除で 409 エラーメッセージが表示される
+- [x] 設定画面で engine.* の値を変更・保存でき、「既定値に戻す」が機能する
+- [x] インポートウィザード4段階が一連で動作する: エラー行表示 → 店舗区分確定 → 曲名解決（match/stub/skip） → ドライラン差分 → コミット結果（APIモックで全分岐をテスト）
+- [x] エクスポートがファイルダウンロードとして機能する
+- [x] 375px（モバイル）と 1024px（PC）の両方でレイアウトが崩れない
+- [x] design_rule.md 準拠（テーブル・フォーム・バッジ・トーストの実装規約）（deployable: 追加インフラなし）
 
 ## Risks
 - **設定項目の過多で迷子**: engine.* は20項目超。Mitigation: グループ化+説明文+既定値表示。「詳細設定」折りたたみ
