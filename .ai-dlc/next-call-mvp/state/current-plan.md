@@ -1,152 +1,166 @@
-# Plan — unit-05-session-screen (frontend)
+# Plan — unit-08-csv-import-api (backend)
 
-**Branch:** ai-dlc/next-call-mvp/05-session-screen
-**Worktree:** /Users/fisico/src/senkyoku/.ai-dlc/worktrees/next-call-mvp-05-session-screen
-**Bolt:** 1（単一ボルト。frontend 画面 + テスト基盤導入）
-**Depends on:** unit-01（Next.js基盤/認証/shadcn）, unit-03（全API）— マージ済み
+**Branch:** ai-dlc/next-call-mvp/08-csv-import-api
+**Worktree:** /Users/fisico/src/senkyoku/.ai-dlc/worktrees/next-call-mvp-08-csv-import-api
+**Bolt:** 1（単一ボルト。ImportJob マイグレーション + 4段階インポートAPI + Excel抽出スクリプト + テスト）
+**Depends on:** unit-01（基盤/DB/schema）, unit-03（マスター/セッションAPI・エラー規約・zod・リポジトリ）— 全マージ済み
 
-## 前提調査サマリ（確定した契約）
+## 前提調査サマリ（確定した契約・再利用資産）
 
-- **API 規約**: JSON/クエリ camelCase、POST=201・DELETE=204・PATCH/GET=200、リソース名エンベロープ（{ session } / { sessions } / { venues } / { instruments } / { songs } / { song } / { venue } / { performance }）、エラーは { error: { code, message, details? } }（code: VALIDATION_ERROR/NOT_FOUND/CONFLICT/INTERNAL_ERROR）。
-- **使用エンドポイント**:
-  - GET /api/sessions/active → { session }（無い時 404 = ACTIVE 無し）
-  - POST /api/sessions { venueId, hasListeners?, sessionDate? } → 201 { session: SessionDetail }（ACTIVE 二重は 409, details.activeSessionId）
-  - GET /api/sessions → { sessions }（venueName 付き・新しい順）
-  - GET /api/sessions/:id → { session: SessionDetail }
-  - PATCH /api/sessions/:id { hasListeners? | note? | status:"ENDED" } → { session }
-  - POST /api/sessions/:id/performances { songId | quickTitle, participated?, instrument?, calledByMe?, noChart?, note?, frontInstruments?[] } → 201 { performance }（ENDED は 409）
-  - PATCH /api/performances/:id（部分更新・曲の付け替え不可）→ { performance }
-  - DELETE /api/performances/:id → 204
-  - GET /api/venues → { venues } / POST /api/venues { name, isHome } → 201 { venue }（name 重複 409）
-  - GET /api/instruments → { instruments }（sortOrder 順・初期12種 vo ss as ts bs tp fl fh harm tb cl g）
-  - GET /api/songs?q= → { songs }（title 部分一致・genreTags 含む）
-  - POST /api/songs/quick { title } → 201 { song }（正規化同名は 409 + details.song = 既存曲）
-- **SessionDetail 形**: SessionRow + venueName + performances: PerformanceWithFront[]。PerformanceWithFront = PerformanceRow + songTitle + frontInstruments:[{code,position}]（position 昇順）。
-- **frontInstruments 契約**: 入力は [{code, position}]。サーバは position 昇順にソートし 0.. に振り直す。→ フロントは「タップ追加順に position=0,1,2,... を採番」して送ればよい（同一楽器の重複可）。
-- **既存 app shell**: src/app/(main)/layout.tsx（max-w-lg・下部 BottomNav h-14・main は pb-20）、BottomNav（/=セッション, /suggest=推薦, /songs=マスター, /settings=設定）。ホーム src/app/(main)/page.tsx は現在 PlaceholderCard。/sessions ルートは未作成。
-- **既存 UI**: shadcn の Button/Badge/Card/Checkbox/Dialog/Input/Select/Sheet/Slider/Sonner/Table あり。
-  - Button の size 既定は h-8（design_rule §6.1/§8.3 の h-10 タップ領域に満たない）→ 主要操作ボタンは className="h-10 ..." で明示上書き。
-  - Badge の variant は default/secondary/destructive/outline/ghost/link のみ。→ info/warning/success/neutral の semantic variant を design_rule §6.3 の class（dark: 文字色込み）で追加する。
-  - Sonner Toaster は未マウント（handoff-notes）→ 本ユニットでマウント。
-  - next-themes ThemeProvider 未マウントだが Sonner の useTheme は既定 system で動作（クラッシュしない）。
-- **テスト**: testing-library 未導入・jsdom 未導入・@vitejs/plugin-react 未導入。vitest 現状 environment=node・include=tests/**/*.test.ts（.tsx 含まず）。既存 node テスト 30+ 本を壊さず jsdom を追加する必要あり。
+- **DB/ORM**: better-sqlite3 + Drizzle（同期API .all()/.get()/.run()、同期 db.transaction((tx)=>{})）。schema は additive のみ（列削除・改名禁止）。マイグレーションは drizzle-kit generate → src/db/migrations/000N_*.sql、runMigrations()（src/db/migrate.ts）で適用。既存最新は 0001。
+- **エラー規約**（src/server/http/errors.ts）: { error: { code, message, details? } }。code = VALIDATION_ERROR(400)/NOT_FOUND(404)/CONFLICT(409)/INTERNAL_ERROR(500)。ショートハンド validationError/notFound/conflict。
+- **Route 規約**（src/server/http/handler.ts）: 全 Route を withErrorHandling() で包む。ZodError→400自動変換。parseJsonBody(req, schema) あり（JSON用）。POST=201・DELETE=204・GET/PATCH=200・camelCase・リソース名エンベロープ。Route は薄く、業務ロジックは server 層へ。
+- **正規化**（src/lib/normalize-title.ts）: normalizeTitle() = NFKC+小文字+trim+連続空白圧縮。曲名マッチの唯一の規則。songs.titleNormalized 列（index 済み idx_songs_title_normalized）に一致させる。
+- **再利用リポジトリ関数**:
+  - src/server/repositories/songs.ts: normalizeTitle 連携、resolveTagIds（private・genre名→id、未知は validationError）、attachGenreTags、quickCreateSong（正規化一致で既存返却 / 無ければ needsReview=true スタブ作成）。※createSong/updateSong は自前で db.transaction を開くので commit の単一トランザクション内では呼ばず、tx レベルの insert/update を直書きする（ネスト回避）。genre 解決は genreTags を直接引く同等ロジックを commit 内 tx で実装。
+  - src/server/repositories/masters.ts: venues/genreTags の参照。venue 作成は commit tx 内で直書き（createVenue もトランザクションを開くため）。
+  - src/server/repositories/performances.ts: insertFrontInstruments（position 0..振り直し）・assertInstrumentCodes（未知コード400）・markSongPlayed の実装パターンを踏襲（同ファイルは private のため commit 内に同等ロジックを tx で実装）。
+- **スキーマ既知値**:
+  - songs: title(unique)/titleNormalized(notNull,index)/songKey(nullable)/form enum(AABA|ABAC|BLUES12|OTHER,default OTHER)/composer/hasPlayed/noChartOk/isStandard/simpleForm/inKurobon1/season enum(SPRING|SUMMER|AUTUMN|WINTER|ALL,default ALL)/listenerLevel(1-5,default3)/energyLevel(default3)/needsReview/note。
+  - genre_tags: 固定9種（GENRE_TAG_NAMES in src/db/seed.ts: バラード/ボサノバ/3拍子/モード/ファンク/ブルース/歌もの/循環/キメが多い曲）。song_genre_tags 中間表。
+  - venues: name(unique)/isHome(default false)。sessions: sessionDate(YYYY-MM-DD)/venueId/hasListeners/status(ACTIVE|ENDED,default ACTIVE)。performances: sessionId/songId/orderIndex/participated/instrument enum(SAX|PIANO|NONE,default NONE)/calledByMe/noChart/note。performance_front_instruments: PK(performanceId,position)、instrumentCode→instruments。
+  - instruments（12種: vo ss as ts bs tp fl fh harm tb cl g）。
+- **テスト基盤**: vitest projects（node/dom 分離）。API テストは Route を直接 import して呼ぶ方式（tests/api/helpers.ts: setupTestDb() が一時DB+runMigrations()+seedDatabase()、jsonRequest/getRequest/routeParams/expectApiError/testDb）。
+- **既存 scaffold**: tests/api/recommendations-import.test.ts に skipIf(true) の結合テストと「import route が存在しないこと」を検証する backpressure テストあり。unit-08 完成後に有効化する契約（handoff-notes L19）。importRouteExists() は src/app/api/import/route.ts 固定パス判定 → 実ルート構成に合わせて更新が必要。
+- **export 網羅**（src/server/repositories/export.ts + tests/api/export.test.ts の固定 EXPORT_TABLE_KEYS）: import_jobs は使い捨て作業表のためエクスポート対象外とする（テストは固定キー配列なので破綻しない）。export.ts に「import_jobs は意図的に除外（transient work table）」のコメントを追加。
+- **依存の現状**: CSV/XLSX ライブラリは未導入（csv-parse/exceljs/papaparse/xlsx いずれも無し）。zod v4・tsx あり。
+- **実データ**: /Users/fisico/Downloads/やれる曲.xlsx は存在する（list 733曲・logs_all 2,293行）→ 基準12のリハーサル対象。リポジトリにはコミットしない。
 
-## データフェッチ選定
+## ルーティング設計上の決定（Next.js 制約）
+POST /api/import/:type と /api/import/:jobId/... は Next.js の「同一階層で異なる名前の動的セグメント（[type] と [jobId]）を併置できない」制約に抵触する。よってジョブ系は静的 jobs セグメント配下に置く（spec の :jobId 直下記法からの合理的な逸脱・計画に明記）:
+- src/app/api/import/[type]/route.ts — POST（アップロード・プレビュー作成）
+- src/app/api/import/jobs/[jobId]/resolutions/route.ts — POST
+- src/app/api/import/jobs/[jobId]/dry-run/route.ts — GET
+- src/app/api/import/jobs/[jobId]/commit/route.ts — POST
+- src/app/api/import/jobs/[jobId]/route.ts — DELETE
 
-- **SWR** を採用（軽量・依存小・fetch モックしやすい＝criterion 5 のテスト容易）。GET キャッシュ（active/一覧/venues/instruments/曲検索）に使用。
-- ミューテーション（POST/PATCH/DELETE）は apiClient 直呼び + 成功後 mutate() で再検証。SWRConfig は必須ではない。フェッチャは共通 apiClient に集約。
+## ライブラリ選定
+- **CSV パース**: csv-parse（csv-parse/sync の同期 parse）を dependencies に追加。理由: BOM除去(bom:true)・引用符・改行内包に堅牢、columns:true でヘッダ→オブジェクト、同期APIが better-sqlite3 の同期モデルと整合。papaparse は代替だが csv-parse を採用。
+- **XLSX パース**: exceljs を devDependencies に追加（抽出スクリプトは CLI 専用・アプリ非組込のため本番 bundle に含めない）。理由: 現行メンテ・型定義同梱・シート/行アクセスが明快。SheetJS(xlsx) は npm 配布/セキュリティ勧告の懸念があり回避。フィクスチャ xlsx も exceljs で生成（コミットせずテスト内生成）。
 
 ---
 
 ## タスク一覧
 
-### Task 1 — テスト基盤（testing-library + vitest jsdom）導入 [criterion 1,5,7 の前提]
-- devDeps 追加: @testing-library/react, @testing-library/user-event, @testing-library/jest-dom, @testing-library/dom, jsdom, @vitejs/plugin-react。
-- vitest.config.ts を projects（workspace）構成へ変更し既存 node テストを保護:
-  - project "node": environment=node, include=tests/**/*.test.ts（現状維持）。
-  - project "dom": environment=jsdom, include=tests/components/**/*.test.tsx, plugins=[react()], setupFiles=tests/setup/dom.ts。
-  - resolve tsconfigPaths 維持（@/*）。
-- tests/setup/dom.ts: import "@testing-library/jest-dom/vitest" + afterEach(cleanup)。
-- npm run test が既存全テスト + 新規 component テストを実行できることを確認。
+### Task 1 — ImportJob マイグレーション（additive）[基準 全体の土台]
+- src/db/schema.ts に importJobs テーブル追加（末尾・additive）:
+  - id PK autoincrement
+  - type text enum(songs|setlists) notNull
+  - status text enum(PREVIEW|COMMITTED|DISCARDED) notNull default PREVIEW
+  - parsedRows text notNull default '[]'（検証済み有効行の JSON。行番号付き）
+  - errors text notNull default '[]'（{ line, reason, raw } の JSON 配列）
+  - unknowns text notNull default '{}'（songs: 無し / setlists: { venues:[], titles:[{csvTitle, candidates:[{songId,title,matchType}]}] } の JSON）
+  - resolutions text（venue is_home マップ + 曲名解決の JSON。nullable）
+  - createdAt / updatedAt（utcNow 既定）
+- npm run db:generate で 0002_*.sql を生成（手書きではなく drizzle-kit）。tests/db/migrate.test.ts が通ることを確認。
+- export.ts に import_jobs 除外コメントを追記（export 網羅契約の明示）。
 
-### Task 2 — API クライアント + 型 + SWR フック [criterion 全般の土台]
-- src/lib/api/types.ts: サーバ返却の camelCase DTO 型（SessionSummary, SessionDetail, PerformanceWithFront, FrontInstrument, Venue, Instrument, Song, GenreTag, ParticipationInstrument="SAX"|"PIANO"|"NONE"）。DB schema/リポジトリ戻り値に一致。
-- src/lib/api/client.ts: apiFetch<T>(path, init?) — エンベロープを剥がす/204 は void/エラー時 ApiClientError（status, code, message, details）を throw。SWR 用 fetcher。
-- src/lib/api/hooks.ts: useActiveSession()（404→null 正常扱い）, useSessions(), useSession(id), useVenues(), useInstruments(), useSongSearch(term)（debounce 250ms + 直近結果キャッシュ、空文字は fetch しない）。
-- swr を dependencies に追加。
+### Task 2 — zod 行スキーマ・変換（src/server/validation/import.ts）[基準 1,2,3,4,11]
+- **songsCsvRow**: CSV ヘッダ（title,key,form,composer,has_played,no_chart_ok,is_standard,simple_form,in_kurobon1,season,listener_level,energy_level,genres,note）→ camelCase + 型変換。
+  - title 必須 trim min1。key→songKey（nullable）。form enum 検証。
+  - boolean 列（has_played/no_chart_ok/is_standard/simple_form/in_kurobon1）: "1"→true "0"/空→false、それ以外エラー。
+  - season: 春→SPRING/夏→SUMMER/秋→AUTUMN/冬→WINTER/通年・空→ALL、それ以外エラー。
+  - listener_level/energy_level: 1–5、空→3。
+  - genres: | 区切り→配列、各要素は GENRE_TAG_NAMES の9語彙のみ（未知はエラー行に理由付き）。空→[]。
+- **setlistsCsvRow**: ヘッダ（date,venue_name,order,title,participated,instrument,called_by_me,no_chart,memo,front_instruments）。
+  - date YYYY-MM-DD 形式検証。venue_name 必須。order int。title 必須。
+  - participated 1/0。instrument: sax→SAX/piano→PIANO/空→NONE、participated=0 なら強制 NONE。called_by_me/no_chart 1/0。
+  - front_instruments: | 区切りコード列（順序保持・重複可・空可）。コード実在検証は commit 時（instruments マスター）。
+- **resolutionsSchema**: { venues: Record<string, boolean>, titles: Record<string, { action: "match"|"create_stub"|"skip", songId?: number }> }（match 時 songId 必須を refine）。
+- **commit クエリ**: recalcHasPlayed（boolean、既定 false）。
+- 行数上限定数 MAX_ROWS = 20000。
 
-### Task 3 — ホーム / （分岐コンテナ + 空状態） [criterion 1,8]
-- src/app/(main)/page.tsx を client エントリ化: useActiveSession() で分岐。
-  - ローディング: 簡易表示。
-  - ACTIVE あり → <SessionRecordScreen session=... />（Task 6）。
-  - ACTIVE なし → 空ホーム: Primary「セッションを開始」（画面内唯一の Primary, h-10）+ 直近セッション上位数件（venueName・日付・曲数・母店バッジ）+「すべての履歴を見る →」（/sessions への link/ghost）。
-- 直近件数は useSessions() の先頭 N 件。モバイル 375px 基準・max-w-lg 内。
+### Task 3 — CSV パース + プレビュー生成（src/server/import/preview.ts）[基準 1,2,3,4]
+- multipart から CSV テキスト取得（Route 側で req.formData() → File → text()）。
+- csv-parse/sync（bom:true, columns:true, skip_empty_lines:true, trim:true）で行配列化。行数 > MAX_ROWS は 400（明示エラー）。ヘッダ不足/不正列は 400。
+- 行ごとに zod 検証 → parsedRows（成功・行番号付き）と errors（{ line, reason, raw }）に振り分け。エラー行があっても有効行でプレビュー継続（基準3）。
+- **songs**: 有効行の titleNormalized で既存曲突合 → 新規/更新の内訳を preview サマリに含める。unknowns は空。
+- **setlists**:
+  - 未知 venue_name 一覧（venues.name に無いもの）を収集 → is_home 解決が必要な集合。
+  - マスター未一致 title 一覧（normalizeTitle で titleNormalized 完全一致が無いもの）を収集し、各々に近似候補最大3件を付与。候補順序: (1)完全一致（raw title 一致）→(2)正規化一致→(3)部分一致（titleNormalized の substring / LIKE %q%）。重複除去し先頭3件。
+- ImportJob(PREVIEW) を作成（type/parsedRows/errors/unknowns 保存）。
+- レスポンス: { job: { id, type, status }, totalRows, validRows, errors, unknowns }。
 
-### Task 4 — セッション開始シート StartSessionSheet [criterion 2,8]
-- src/components/session/start-session-sheet.tsx（Sheet, side="bottom", rounded-2xl）。
-- 既存店舗: useVenues() 一覧を 1 タップ選択（母店は info バッジ）。
-- 新規店舗: 「または」区切り + 名前 Input。名前を入力した時のみ「この店舗は母店ですか？」セグメント（はい/いいえ, 既定=いいえ）を表示（criterion 2: 既存選択時は非表示）。help「あとで設定>母店設定で変更可」。
-- リスナー客トグル（あり/なし, 既定=なし）。
-- 開始（Primary h-10）: 新規なら先に POST /api/venues {name,isHome}（name 重複 409 → 既存 venue にフォールバック）→ その venueId で POST /api/sessions。既存なら直接 POST /api/sessions {venueId, hasListeners}。409（ACTIVE 二重）→ toast + active 誘導。成功 → mutate(active)。
+### Task 4 — Route: アップロード・resolutions・DELETE [基準 3,4,5,6,7]
+- import/[type]/route.ts POST: type を songs|setlists に検証（それ以外 404/400）→ formData 取得 → Task3 preview → 201 { job, totalRows, validRows, errors, unknowns }。全て withErrorHandling。
+- import/jobs/[jobId]/resolutions/route.ts POST: job 取得（無ければ 404、status!=PREVIEW は 409）→ parseJsonBody(resolutionsSchema) → resolutions 列へ保存 → 200 { job }。
+- import/jobs/[jobId]/route.ts DELETE: job を DISCARDED に更新 → 204。
+- ImportJob の永続化は src/server/repositories/import-jobs.ts（getJob/createJob/saveResolutions/markStatus）。
 
-### Task 5 — 共有コンポーネント SongPerformanceSheet（曲追加/編集シート） [criterion 3,4,5,6,7]
-- src/components/session/song-performance-sheet.tsx。unit-06 再利用契約の中核。
-- Props（契約）:
-  - sessionId: number
-  - mode: "create" | "edit", performanceId?: number（edit 時）
-  - initialSong?: { id; title }（固定曲。渡された場合は検索UIを出さず選択済み表示。unit-06 の「この曲をコール」）
-  - initialCalledByMe?: boolean（既定 false）
-  - initialInstrument?: "SAX"|"PIANO"|"NONE"（既定 SAX）
-  - initialFrontInstruments?, initialNoChart?, initialNote?（edit 時の値流し込み）
-  - open, onOpenChange, onSaved?(performance), onQuickCreated?（任意）
-- UI/挙動:
-  - 曲名検索（initialSong 未指定時）: useSongSearch（debounce 250ms）→ 候補カードタップで選択。選択中は success バッジ。
-  - ヒットなし時: 「『{入力}』を新規登録」→ POST /api/songs/quick → 返った song を選択状態に（needs_review ヒント）。409（正規化同名既存）は details.song を選択状態に流用（そのまま追加可）。
-  - 自分の参加: セグメント（不参加/サックス/ピアノ, 既定=サックス）。none 選択時も instrument=NONE を送る。
-  - チェック: 自分がコールした（initialCalledByMe 反映）/ 譜面なしだった。
-  - フロント編成（任意・折りたたみ既定・展開可）: 楽器チップ列（useInstruments()）タップで追加順に末尾追加＝position 採番、選択済みチップは「n. code ✕」でタップ削除、同一楽器の複数追加可。送信時 frontInstruments=[{code,position:index}]。
-  - メモ（任意）。
-  - フッタ: 「保存して次へ」（secondary, シートを閉じずリセットして連続追加）+「保存」（Primary h-10）。シートは overlay で独立コンテキスト（記録画面本体の Primary と両立可）。
-  - 保存 = create: POST /api/sessions/:id/performances（songId or quickTitle）/ edit: PATCH /api/performances/:id。
-  - 二重送信防止: 送信中はボタン disabled。
-  - POST 失敗時: フォーム state を保持したまま error-block 表示 +「リトライ」（同一内容再送）+「キャンセル」。入力を消さない。
-  - 必須入力は曲名（＝song 選択）のみ。他は既定値で保存可（criterion 6）。
+### Task 5 — dry-run（src/server/import/dry-run.ts + Route）[基準 5]
+- import/jobs/[jobId]/dry-run/route.ts GET: job(PREVIEW) + resolutions を読み、DB 読み取りのみで差分サマリを算出:
+  - songs: 新規曲n / 更新曲n（titleNormalized 突合）。
+  - setlists: 新規店舗n（未知 venue のうち解決済み）/ 新規セッションn（date+venue の組数、既存重複はエラー予告としてカウント）/ 新規演奏記録n / スキップn（title action=skip、または未解決）。
+  - create_stub 予定数も内訳表示。
+- 一切 INSERT/UPDATE しない（トランザクションを開かない・読み取りクエリのみ）。基準: dry-run 前後で全テーブル件数不変。
+- 200 { summary: {...} }。
 
-### Task 6 — セッション記録画面 SessionRecordScreen + セットリスト [criterion 1,8]
-- src/components/session/session-record-screen.tsx。
-- ヘッダ: venueName + 母店バッジ（info）+ 日付 + ⋯ メニュー（「セッションを終了」）。
-- リスナー客トグル → 変更で即 PATCH /api/sessions/:id {hasListeners}（楽観更新 or mutate）。
-- セットリスト: session.performances（order_index 順）をカード表示。各行: 番号・songTitle・フロント編成（vo → as → as → ts）・バッジ（participation SAX/PIANO/不参加=neutral, CALL=success, 譜面なし=warning）。行タップ → 編集用 SongPerformanceSheet（mode=edit, 値流し込み）。⋯ → 削除（確認ダイアログ → DELETE /api/performances/:id → mutate）。
-- 「＋ 曲を追加」（secondary — Primary ではない）→ SongPerformanceSheet（mode=create）。
-- 下部固定バー: 「次の曲を考える」（Primary h-10, 画面内唯一の Primary）→ /suggest（unit-06 未完成時プレースホルダーへ遷移）。BottomNav と重ならない配置。
-- 終了: 確認ダイアログ（Destructive スタイルを使わない通常ボタン）→ PATCH {status:"ENDED"} → 履歴詳細 /sessions/:id へ。
+### Task 6 — commit（src/server/import/commit.ts + Route）[基準 1,2,6,7,8,9,11]
+- import/jobs/[jobId]/commit/route.ts POST: parseJsonBody(commitSchema)（recalcHasPlayed）→ job 取得（PREVIEW 以外は 409「1ジョブ1回」）→ commit → job を COMMITTED に更新 → 200 { summary }。
+- **単一 db.transaction((tx)=>{...})**（途中 throw で全ロールバック → 部分取込ゼロ・基準6）:
+  - **songs**: 各有効行を titleNormalized で upsert。既存→UPDATE（列 + genres 差し替え: song_genre_tags 全削除→再挿入）。新規→INSERT（titleNormalized 付与）。genre 名→id は tx 内で genreTags を直接引く（resolveTagIds 同等）。
+  - **setlists**:
+    - title 解決を適用: action=match→songId 使用 / create_stub→needsReview=true スタブを tx 内 INSERT（既存 quickCreate 相当を tx で）/ skip→当該行除外。マスター一致済み title は自動 match。
+    - venue: 既存は id 使用。未知は resolutions の is_home で tx 内 INSERT（name unique）。
+    - session: date+venue_name の組ごとに 1 セッション。既存の同 date+venue セッションがあれば throw conflict（二重取込防止・基準7）。無ければ INSERT（status は ENDED=履歴取込。sessionDate=date）。
+    - performance: 同一組内で order 昇順に orderIndex を採番し INSERT（instrument マッピング済み、participated=0→NONE、calledByMe、noChart、note=memo）。
+    - front_instruments: コードを instruments マスターで検証（未知は throw validationError）、position 0.. で performance_front_instruments へ順序どおり INSERT（基準11）。
+  - **recalcHasPlayed=true**: participated=1 の演奏実績を持つ曲の hasPlayed を tx 内で ON（基準8）。
+  - サマリ（created/updated/sessions/performances/skipped/stubs）を集計して返す。
 
-### Task 7 — 履歴 /sessions と詳細 /sessions/[id] [criterion 1,8]
-- src/app/(main)/sessions/page.tsx: useSessions() を新しい順一覧（日付・venueName・リスナー・母店バッジ）。行タップ → 詳細。
-- src/app/(main)/sessions/[id]/page.tsx: useSession(id) 詳細。読み取り中心のセットリスト。
-  - status==="ENDED" のときは「曲を追加」「次の曲を考える」を非表示。ただし各行 ⋯ から演奏記録の修正は可（SongPerformanceSheet edit を再利用）。削除も可（確認あり）。
-  - status==="ACTIVE" の id を直接開いた場合はホームの記録画面へ誘導 or 記録画面コンポーネント再利用。
+### Task 7 — Excel 抽出スクリプト（scripts/extract-excel.ts）[基準 10,12]
+- CLI: tsx scripts/extract-excel.ts <xlsx-path> [--out-dir <dir>]（package.json に extract:excel script 追加、アプリには組み込まない）。exceljs で読む。
+- **list シート（ヘッダー3行目）→ songs.csv**（discovery.md「Excel Source Analysis」表に厳密準拠）:
+  - Title→title、Key→key（Fm(Ab) 等原文）、Composer→composer。
+  - Form: AABA→AABA / ABAC→ABAC / Blues→BLUES12 / それ以外→OTHER（原文は note へ）。
+  - Ready(可★) OR Done(済★) → has_played=1。#1(■) → in_kurobon1=1。
+  - Genre→9語彙マッピング（Ballad→バラード/Bossa→ボサノバ/Waltz→3拍子/Funk→ファンク/Blues→ブルース/Mode→モード/Rhythm Change→循環）。曖昧値(Lain/Ballad?/Swing or Bossa 等)→genres 空 + note に原文 + 警告。
+  - is_standard/simple_form/listener_level/energy_level/season は既定値（空/3/通年）。
+- **logs_all シート → setlists.csv**:
+  - Title/Date/Place→date+venue_name（Date+Place集約）。PlayedPart: as→SAX/pf→PIANO/-→participated=0,NONE。CallingByMe→called_by_me。NoScore→no_chart。
+  - Logs(Y列) の括弧内→front_instruments（| 区切り列を追加）: カンマ区切り楽器コード、as*2→as|as、trio/all/空→編成なし、絵文字・※注記は除去、未知コードは警告リスト。
+  - 導出: NoScore=1 の実績がある曲 → songs.no_chart_ok=1（list 側 CSV に反映）。
+- 出力: songs.csv / setlists.csv（UTF-8）+ 警告レポート（未知ジャンル・未知楽器コード・日付不正等を stderr/ファイルへ）。
 
-### Task 8 — 共有 UI プリミティブ拡張 [criterion 8]
-- src/components/ui/badge.tsx に info/warning/success/neutral variant 追加（design_rule §6.3 の class + dark: 文字色）。
-- 小物: セグメント選択（Segment）・トグル（Toggle）・確認ダイアログ（既存 Dialog ラップ）を src/components/session/ に共通化（アクセシブル: role/aria、focus-visible ring、h-10 タップ領域）。
-- Sonner <Toaster /> を (main)/layout.tsx にマウント（handoff-notes 指示）。
+### Task 8 — テスト [基準 1–12]
+CSV 大型フィクスチャ・xlsx フィクスチャはコミットせずテスト内生成（個人データ非混入）。
+- tests/api/import-songs.test.ts: songs.csv upsert（新規/更新）・genres 複数タグ・season/boolean/level 変換（基準1）。エラー行（行番号+理由）を返しつつ有効行プレビュー継続（基準3）。
+- tests/api/import-setlists.test.ts: 約5,000行を生成して date+venue セッション集約・order 順演奏記録（基準2）。performances が session 経由で正しい date・called_by_me を持つ（基準9）。front_instruments が position 順で保存（基準11）。
+- tests/api/import-resolutions.test.ts: 未知 venue の is_home 解決・title match/create_stub(needsReview=true)/skip がコミットに反映（基準4）。近似候補（完全→正規化→部分・最大3件）の順序検証。
+- tests/api/import-dry-run.test.ts: dry-run 前後で全テーブル件数不変 + サマリ正当（基準5）。
+- tests/api/import-commit.test.ts: 途中失敗（例: 不正 front コード / 二重 session）で部分取込が残らない（基準6）。同一 date+venue 二重取込が 409（基準7）。recalc_has_played で participated=1 曲の has_played=ON（基準8）。1ジョブ2回目 commit は 409。
+- tests/scripts/extract-excel.test.ts: exceljs で匿名化小型 xlsx を生成→抽出→ songs.csv/setlists.csv を検証（has_played=Ready/Done・in_kurobon1=#1・Genre マッピング・front 編成 as*2/trio/空 の解釈・no_chart_ok 導出）（基準10）。
+- tests/api/recommendations-import.test.ts の有効化: importRouteExists() を実ルート（src/app/api/import/[type]/route.ts）判定に更新、skipIf(true) を外し end-to-end 本体を実装（インポート済み履歴が集計へ反映・基準9 の結合。backpressure テストも実装状態に整合）。
+- 基準12（実データリハーサル）: existsSync("/Users/fisico/Downloads/やれる曲.xlsx") ガード付きテスト（無ければ skip）で 抽出→POST import→resolutions→dry-run まで通し、警告リストを出力（コミットはしない）。
 
-### Task 9 — テスト（component / E2E 相当） [criterion 1-7]
-tests/components/*.test.tsx（jsdom, fetch を vi.fn でモック, user-event 操作）:
-- session-flow.test.tsx: 開始→曲追加（既存曲＋クイック登録）→編集→削除→リスナートグル→終了の一連。→ criterion 1
-- start-session.test.tsx: 新規店舗名入力時のみ母店セグメント表示 / 既存選択時は非表示。→ criterion 2
-- front-instruments.test.tsx: vo→as→as→ts 順で追加し、送信 payload の position 順序 & 表示順を検証。→ criterion 3
-- quick-register.test.tsx: 検索ヒットなし→クイック登録→そのまま performance 追加まで。→ criterion 4
-- post-failure-retry.test.tsx: POST を一度失敗させ、入力保持を確認しリトライで成功。→ criterion 5
-- minimal-add.test.tsx: 曲名のみ（既定値）で保存完了。→ criterion 6
-- sheet-reuse-contract.test.tsx: SongPerformanceSheet を initialSong 固定 + initialCalledByMe=true で開き、検索UIが出ず・コール ON 初期状態を検証。→ criterion 7
-- 二重送信防止（送信中 disabled）は flow/failure テストで検証。
-
-### Task 10 — 検証
-- npm run typecheck, npm run lint, npm run test（node+dom 両 project）を通す。
-- deployable: 既存 Docker 構成のまま。追加インフラなし（依存追加は swr + テスト devDeps のみ）。
+### Task 9 — 検証・依存追加
+- 依存: csv-parse（dependencies）、exceljs（devDependencies）。npm install。
+- npm run db:generate（0002 migration）。
+- npm run typecheck / npm run lint / npm run test（既存 60+ テスト + 新規を全て緑）。
+- deployable: Docker 構成不変（migration は起動時 runMigrations で自動適用・additive）。
 
 ---
 
-## 成功基準カバレッジ（8/8）
-
-1. 一連フロー @375px（component/E2E 相当） → Task 3,4,5,6,7 + Task9 session-flow
-2. 新規店舗時のみ母店判定 → Task 4 + Task9 start-session
-3. フロント編成 vo,as,as,ts 順・表示反映 → Task 5 + Task9 front-instruments
-4. ヒットなし→クイック登録→追加 → Task 5 + Task9 quick-register
-5. POST 失敗で入力保持+リトライ成功（fetch モック） → Task 5 + Task9 post-failure-retry
-6. 曲名のみ既定値で完了 → Task 5 + Task9 minimal-add
-7. 曲確定済み+calledByMe=true 初期状態で開けるテスト → Task 5 + Task9 sheet-reuse-contract
-8. design_rule 準拠（Primary 1/画面・バッジ+テキスト・focus-visible・コントラスト） → 全 Task + Task 8
+## 成功基準カバレッジ（12/12。spec の - [ ] は12項目）
+1. songs.csv 正常取込 → Task2,3,6 + import-songs.test
+2. setlists.csv 5,000行 集約/order → Task3,6 + import-setlists.test
+3. バリデーションエラー行＋有効行継続 → Task3 + import-songs.test
+4. venue/title 解決反映（create_stub=needsReview）→ Task2,5,6 + import-resolutions.test
+5. dry-run DB無変更 → Task5 + import-dry-run.test
+6. commit 単一トランザクション → Task6 + import-commit.test
+7. 二重 date+venue エラー → Task6 + import-commit.test
+8. recalc_has_played → Task6 + import-commit.test
+9. performances 日付/called_by_me（＋集計結合の scaffold 有効化）→ Task6,8 + recommendations-import.test
+10. 抽出スクリプト fixture xlsx 検証 → Task7 + extract-excel.test
+11. front_instruments 順序保存 → Task2,6 + import-setlists.test
+12. 実データ抽出→取込リハーサル（dry-run まで）→ Task7,8（存在ガード付き）
 
 ## リスク
-
-- **既存 node テスト破壊**: jsdom 導入で 30+ 本の API/engine テストが壊れる恐れ。→ vitest projects で node/dom を環境分離し include を厳密化。
-- **Primary ボタンの複数化**: 記録画面（次の曲を考える）と曲追加シート（保存）が同時に Primary。→ シートは overlay の独立コンテキスト扱い。記録画面本体の Primary は1つ・「曲を追加」は secondary に固定。空ホームは「セッションを開始」のみ Primary。
-- **タップ領域 h-10 不足**: shadcn Button 既定 h-8。→ 主要操作は className で h-10 明示、design_rule §8.3 準拠。
-- **クイック登録の 409（正規化同名既存）**: → details.song を選択状態に流用し、そのまま追加可（criterion 4 の一連性を担保）。
-- **セッション開始の 409（ACTIVE 二重）/店舗名重複 409**: → toast + 既存へ誘導、venue 重複は既存 venue 利用にフォールバック。
-- **swr 依存追加**: 軽量だが依存増。→ フェッチャは apiClient に集約し置換可能に保つ。
-- **frontInstruments position の解釈差異**: サーバが 0.. に振り直す。→ フロントは追加順 index を position として送る（重複可）ことでサーバ挙動と一致。
-- **unit-06 未完成**: 「次の曲を考える」→ /suggest は現状 PlaceholderCard。→ 遷移先はプレースホルダーのままで導線は成立（unit-06 完成時に置換）。
+- **Next.js 動的セグメント併置不可**（[type] と [jobId]）→ ジョブ系を import/jobs/[jobId]/... に配置（spec の :jobId 記法から合理的逸脱・明記）。scaffold の importRouteExists() も実パスへ更新。
+- **単一トランザクションでのリポジトリ再利用**: 既存 createSong/createVenue/startSession/addPerformance は各自 db.transaction を開くためネスト/ロールバック境界が曖昧化。→ commit 内は tx レベルの直書き（同等ロジックを再実装）で 1トランザクションを厳守。共通の純関数（normalizeTitle・genre/instrument 解決）のみ再利用。
+- **Excel 実データの表記揺れ**（Key 複合表記・別名・Logs 想定外書式）→ 抽出は警告リスト出力＋人手確認、曲名は NFKC 正規化＋近似候補で解決（自動マージしない）。実データはコミットせずパス引数。
+- **大量行のメモリ/性能**: 全行メモリ処理。MAX_ROWS=20,000 で明示エラー。5,000行 1トランザクションは SQLite で十分（テストで実証）。
+- **XLSX ライブラリのセキュリティ/配布**: SheetJS 回避、exceljs を devDependency（本番非組込）に限定。フィクスチャは生成しコミットしない。
+- **export 網羅契約**: import_jobs を意図的に除外（使い捨て work table）→ export.ts にコメント、EXPORT_TABLE_KEYS（固定配列）は不変で破綻しない。
+- **CSV 文字コード/BOM・iPhoneメモ由来の揺れ**: csv-parse bom:true + normalizeTitle で吸収。
+- **季節列**: PiaScore 由来の手動転記前提（既定 ALL）。抽出スクリプトは season を設定しない（既定）。
