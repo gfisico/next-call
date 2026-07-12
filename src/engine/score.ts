@@ -124,14 +124,7 @@ export function scoreSong(
 
   const contrib = intentContributions(song, input, config);
   let score =
-    config.baseScore +
-    contrib.rare +
-    contrib.longUnplayed +
-    contrib.safety +
-    contrib.mood +
-    contrib.ballad +
-    contrib.seasonal +
-    contrib.listener;
+    config.baseScore + Object.values(contrib).reduce((sum, v) => sum + v, 0);
 
   // §10 ジャンル上書き: フィルタではなく強い加点（ユーザー確定）
   const overridden = conditions.genreOverride.filter((g) => song.genres.includes(g));
