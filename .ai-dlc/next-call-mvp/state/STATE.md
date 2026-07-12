@@ -1,18 +1,18 @@
 # State: next-call — ジャズセッション向け選曲提案アプリ MVP
 
 ## Current Position
-- **Hat:** builder
-- **Unit:** unit-01-app-foundation
-- **Bolt:** 1
+- **Hat:** planner
+- **Unit:** unit-02-recommendation-engine
+- **Bolt:** 4
 
 ## Decisions Made
 - 実行パス: Sequential（Agent Teams無効）
-- unit-01 計画は state/current-plan.md に保存済み（10タスク・7基準対応）
-- pre-edit-guard に AI-DLC worktree 例外を追加（ユーザー手動適用・2026-07-12）
+- unit-01 完了（レビューAPPROVED 7/7・86テスト）→ intentブランチへマージ済み
+- ユニットworktreeは intent ブランチ起点で作成（unit-01成果の上に構築）
 
 ## Blockers
-- なし（BLOCKER-001 解決済み）
+- なし
 
 ## Metrics
-- Units complete: 0/9
-- Iterations: 2
+- Units complete: 1/9
+- Iterations: 4
