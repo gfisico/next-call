@@ -11,7 +11,7 @@ import { openDatabase } from "@/db/client";
 import { runMigrations } from "@/db/migrate";
 
 describe("runMigrations", () => {
-  it("空の DB に全12テーブルを作成する", () => {
+  it("空の DB に全テーブルを作成する（import_jobs 含む）", () => {
     const dir = mkdtempSync(path.join(tmpdir(), "next-call-migrate-"));
     const handle = openDatabase(path.join(dir, "empty.db"));
 
@@ -38,6 +38,7 @@ describe("runMigrations", () => {
         "recommendation_candidates",
         "pending_songs",
         "settings",
+        "import_jobs",
       ].sort(),
     );
   });
