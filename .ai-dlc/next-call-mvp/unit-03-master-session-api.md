@@ -22,6 +22,7 @@ operations:
   runbooks: []
   rollback: "ステートレスなAPI層。直前イメージへの切替のみでロールバック可"
   scaling: "単一ユーザー。スケーリング不要"
+hat: planner
 ---
 
 # unit-03-master-session-api
