@@ -8,6 +8,7 @@ pass: ""
 workflow: ""
 ticket: ""
 design_ref: ""
+wireframe: mockups/unit-05-session-screen-wireframe.html
 views: ["/", "/sessions", "/sessions/[id]"]
 deployment:
   target: docker

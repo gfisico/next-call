@@ -8,6 +8,7 @@ pass: ""
 workflow: ""
 ticket: ""
 design_ref: ""
+wireframe: mockups/unit-07-master-settings-screen-wireframe.html
 views: ["/songs", "/songs/[id]", "/settings", "/settings/import"]
 deployment:
   target: docker
