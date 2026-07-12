@@ -4,7 +4,7 @@
  * - 発火した理由が2件未満のときのみ、フォールバック（FALLBACK_*）で2件まで補完
  * - 発火していないルールの理由を捏造しない
  */
-import { intentContributions, oldMetric, rareMetric } from "./score";
+import { intentContributions, oldMetric, rareMetric, statsFor } from "./score";
 import { SPECIAL_CONSECUTIVE_GENRES } from "./types";
 import type {
   EngineConfig,
@@ -12,18 +12,10 @@ import type {
   EngineSong,
   Reason,
   Season,
-  SongStats,
 } from "./types";
 
 const MAX_REASONS = 4;
 const MIN_REASONS = 2;
-
-const FALLBACK_STATS: SongStats = {
-  appearanceCount: 0,
-  daysSinceLastPlayed: null,
-  myPlayCount: 0,
-  myCallCount: 0,
-};
 
 const SEASON_LABELS: Record<Season, string> = {
   SPRING: "春",
@@ -52,7 +44,7 @@ export function generateReasons(
   input: EngineInput,
   config: EngineConfig,
 ): Reason[] {
-  const stats = input.stats[song.id] ?? FALLBACK_STATS;
+  const stats = statsFor(song, input);
   const prev = input.previousPerformance;
   const { intent, conditions } = input;
   const contrib = intentContributions(song, input, config);

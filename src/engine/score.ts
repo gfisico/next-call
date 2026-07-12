@@ -17,6 +17,11 @@ const FALLBACK_STATS: SongStats = {
   myCallCount: 0,
 };
 
+/** 曲の事前集計を取得する。欠落時は安全側既定値（Stage 8 の理由生成とも共有） */
+export function statsFor(song: EngineSong, input: EngineInput): SongStats {
+  return input.stats[song.id] ?? FALLBACK_STATS;
+}
+
 /**
  * consecutive_genre の mode="exclude" 用の実効減点。
  * スコア段階では除外できないため、score_floor を必ず下回る大きな減点で除外相当にする。
@@ -68,7 +73,7 @@ export function intentContributions(
   input: EngineInput,
   config: EngineConfig,
 ): IntentContributions {
-  const stats = input.stats[song.id] ?? FALLBACK_STATS;
+  const stats = statsFor(song, input);
   const intent = input.intent;
   const w = config.sliderWeights;
 
