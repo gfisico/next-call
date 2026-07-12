@@ -6,7 +6,7 @@
  * unit-06 は「この曲をコール」から initialSong 固定 + initialCalledByMe=true で本シートを再利用する。
  * その場合、曲名検索 UI は表示せず選択済み表示になる（criterion 7）。
  */
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   addPerformance,
   ApiClientError,
@@ -130,18 +130,43 @@ export function SongPerformanceSheet({
     !isValidating &&
     songs.length === 0;
 
-  function resetForContinuousAdd() {
-    setSelectedSong(fixedSong ? { ...fixedSong } : null);
+  // 開いた時点の初期状態に戻す（連続追加リセット / シート再オープン時のリセットで共用）
+  const resetToInitial = useCallback(() => {
+    setSelectedSong(
+      initialSong ? { id: initialSong.id, title: initialSong.title } : null,
+    );
     setSearchTerm("");
-    setChoice("SAX");
-    setCalledByMe(false);
-    setNoChart(false);
-    setFront([]);
-    setNote("");
+    setChoice(deriveChoice(initialParticipated, initialInstrument));
+    setCalledByMe(initialCalledByMe);
+    setNoChart(initialNoChart);
+    setFront(
+      initialFrontInstruments
+        ? [...initialFrontInstruments]
+            .sort((a, b) => a.position - b.position)
+            .map((f) => f.code)
+        : [],
+    );
+    setNote(initialNote ?? "");
     setFrontOpen(false);
     setSaveError(null);
     setQuickError(null);
-  }
+  }, [
+    initialSong,
+    initialParticipated,
+    initialInstrument,
+    initialCalledByMe,
+    initialNoChart,
+    initialFrontInstruments,
+    initialNote,
+  ]);
+
+  // シートが閉→開に変わったら初期状態へリセットする（インスタンス再利用でも stale を残さない）。
+  // 初回マウント（open=true 直接レンダ）は初期化子の値を尊重するためリセットしない。
+  const prevOpen = useRef(open);
+  useEffect(() => {
+    if (open && !prevOpen.current) resetToInitial();
+    prevOpen.current = open;
+  }, [open, resetToInitial]);
 
   async function handleQuickRegister() {
     setQuickPending(true);
@@ -223,7 +248,7 @@ export function SongPerformanceSheet({
       if (closeAfter) {
         onOpenChange(false);
       } else {
-        resetForContinuousAdd();
+        resetToInitial();
       }
     } catch (e) {
       // 送信失敗: 入力値は保持したままエラー表示（criterion 5）
