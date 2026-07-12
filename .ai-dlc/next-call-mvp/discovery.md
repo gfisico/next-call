@@ -671,3 +671,33 @@ quality_gates:
 - **マスタ未登録曲のクイック登録**: セッション中の曲追加で検索ヒットしない場合、曲名のみで Song を即時作成できる。この Song は `needs_review=true`（属性未整備）フラグ付きで作成し、マスター管理画面の「属性未整備」フィルタから後で属性を補完する。推薦エンジンは属性未設定の曲を安全側（該当ルールをスキップ）で扱う。自分が participated=true で演奏した曲は has_played を自動で true に更新する
 - 納品戦略: intent（全ユニット完成後に1つのPR、auto_merge）
 - イテレーションパス: dev単一パス（passes: [], active_pass: ""）
+
+## Excel Source Analysis（2026-07-12 実データ確認済み）
+
+初期データの実体は `/Users/fisico/Downloads/やれる曲.xlsx`（iPhoneメモではなくExcel）。主要シート:
+
+### `list` シート（曲マスター、ヘッダー行=3行目、実データ約733曲）
+| Excel列 | 取込先 | 備考 |
+|---|---|---|
+| Title | songs.title | |
+| Key | songs.song_key | `Fm(Ab)` 等の複合表記あり。原文のまま取込 |
+| Form | songs.form | AABA→AABA / ABAC→ABAC / Blues→BLUES12 / それ以外（特殊, ABAB, A16A16BA16等）→OTHER（原文はnoteへ） |
+| Composer | songs.composer | |
+| Ready(可★=仕込み済み193曲) / Done(済★=演奏済み186曲) | **Ready★ OR Done★ → has_played=true**（ユーザー決定） | 仕様§6のコール可能定義に対応 |
+| #1（■=227曲） | songs.in_kurobon1 | 黒本1掲載。<黒本1>162/227 の集計と整合 |
+| Genre | GenreTag | Ballad→バラード, Bossa→ボサノバ, Waltz→3拍子, Funk→ファンク, Blues→ブルース, Mode→モード, Rhythm Change→循環（ユーザー確認済）。曖昧値（Lain, Ballad?, Swing or Bossa等）は未設定+noteに原文 |
+| （Excelに無い） | is_standard / simple_form / listener_level / energy_level / season | 既定値で取込み、後でマスター画面から補完。「歌もの」「キメが多い曲」タグも同様 |
+
+### `logs_all` シート（演奏履歴、実データ2,293行、2021-10-30〜2026-07-04）
+| Excel列 | 取込先 | 備考 |
+|---|---|---|
+| Title / Date / Place | performance / session（Date+Placeで集約） | Place: Somethin'=1280件（**母店=Somethin'**）、Unten=416, 水道橋=144 ほか |
+| PlayedPart（-/as/pf） | participated + instrument | as→SAX, pf→PIANO, -→不参加(NONE) |
+| CallingByMe | called_by_me | |
+| NoScore | no_chart | さらに **NoScore=1の実績がある曲 → songs.no_chart_ok=true を導出** |
+| WithVo | （検証用） | Logs列のvoと整合確認に使用 |
+| **Logs（Y列）** | **front_instruments** | 「曲名 (as, ts) ※メモ」形式。括弧内をパース: カンマ区切り楽器コード、`as*2`→as,as、`trio`/`all`/空→フロント記録なし。絵文字・※注記は取り込まない |
+
+### 取込方式（ユーザー決定）
+- **初回限定の抽出スクリプト**（`scripts/extract-excel.ts` 等）: やれる曲.xlsx → songs.csv / setlists.csv を生成し、既存のCSVインポートAPIへ流す。アプリAPIはCSVのまま
+- Excelファイル自体はリポジトリにコミットしない（個人データ）。スクリプトはパス引数で受け取る。テストは匿名化した小型フィクスチャで行う
