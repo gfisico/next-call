@@ -18,3 +18,9 @@
 - **unit-06（選曲支援画面）**: POST /api/sessions/:id/recommendations、GET .../recommendations/defaults、保留曲API が利用可能。レスポンスに poolSize（Stage1通過数）あり=候補が少ない時の緩和表示に使える。isSparse フラグも返る
 - **unit-08（CSVインポート）**: tests/api/recommendations-import.test.ts に skipIf(true) の結合テスト scaffold あり。unit-08 完成後（import route 実装後）に有効化するとインポート履歴が集計反映されるか検証できる
 - 保留曲の自動解除は performances リポジトリの add/update に組込み済み（calledByMe=true 時・設定 pending.auto_release_on_call 参照）
+
+## from unit-05（セッション画面完成）
+- **unit-06（選曲支援画面）**: 共有コンポーネント src/components/session/song-performance-sheet.tsx を再利用。props: sessionId(必須)/mode/performanceId?/initialSong?（渡すと検索UI非表示・選択済み表示）/initialCalledByMe?(既定false)/initialInstrument?(既定SAX)/initialParticipated?/initialFrontInstruments?/open/onOpenChange/onSaved?/onQuickCreated?。「この曲をコール」は initialSong 固定+initialCalledByMe=true+mode=create で開く
+- 「次の曲を考える」は /suggest へ遷移（現状 PlaceholderCard。unit-06 が差し替える）
+- テスト基盤: vitest projects で node/dom 環境分離済み。dom テストは testing-library + tests/setup/dom.ts の Radix polyfill を使用。SWR 採用
+- GET /api/sessions は曲数/isHome を返さないため画面は venues 突合で母店バッジ付与・曲数は非表示（unit-07 以降でAPIに件数追加すれば表示可）
