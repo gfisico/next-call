@@ -22,7 +22,7 @@ operations:
   runbooks: [docs/ops.md]
   rollback: "GHCRの直前タグ（:sha）を compose で指定して up -d。DBは追加的マイグレーションのため巻き戻し不要"
   scaling: "単一ユーザー・単一コンテナ。スケーリング対象外"
-hat: builder
+hat: reviewer
 retries: 1
 ---
 
