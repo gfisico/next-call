@@ -8,21 +8,34 @@
  * （criterion 5 の fetch モックテストを容易にする）。
  */
 import type {
+  CommitPayload,
+  CommitSummary,
+  DryRunSummary,
+  GenreTag,
+  ImportJobRef,
+  ImportType,
   Instrument,
+  InstrumentCreatePayload,
   PendingSongEntry,
   PerformanceCreatePayload,
   PerformanceUpdatePayload,
   PerformanceWithFront,
+  PreviewResult,
   RecommendationDefaults,
   RecommendationRequestPayload,
   RecommendationResult,
+  ResolutionsPayload,
   SessionDetail,
   SessionPatchPayload,
   SessionStartPayload,
   SessionSummary,
+  SettingsMap,
   Song,
+  SongListQuery,
+  SongUpsertPayload,
   Venue,
   VenueCreatePayload,
+  VenueUpdatePayload,
 } from "./types";
 
 export type ApiErrorCode =
@@ -59,6 +72,11 @@ export async function apiFetch<T>(
   path: string,
   init?: RequestInit,
 ): Promise<T> {
+  // FormData（multipart アップロード）は Content-Type を付けない
+  // （ブラウザが boundary 付きで自動設定する。JSON ヘッダを付けると壊れる）
+  const isFormData =
+    typeof FormData !== "undefined" && init?.body instanceof FormData;
+
   let res: Response;
   try {
     res = await fetch(path, {
@@ -67,7 +85,7 @@ export async function apiFetch<T>(
       ...init,
       headers: {
         Accept: "application/json",
-        ...(init?.body ? { "Content-Type": "application/json" } : {}),
+        ...(init?.body && !isFormData ? { "Content-Type": "application/json" } : {}),
         ...init?.headers,
       },
     });
@@ -212,3 +230,135 @@ export const addPendingSong = (songId: number) =>
 
 export const removePendingSong = (songId: number) =>
   apiFetch<void>(`/api/pending-songs/${songId}`, { method: "DELETE" });
+
+// --- 曲マスター（unit-07・一覧/CRUD） --------------------------------------
+
+/** GET /api/songs のクエリ文字列を組み立てる（inKurobon1 はサーバ非対応のため含めない） */
+export function buildSongsQuery(query: SongListQuery = {}): string {
+  const params = new URLSearchParams();
+  if (query.q && query.q.trim() !== "") params.set("q", query.q.trim());
+  if (query.needsReview) params.set("needsReview", "true");
+  if (query.hasPlayed) params.set("hasPlayed", "true");
+  if (query.genre) params.set("genre", query.genre);
+  if (query.season) params.set("season", query.season);
+  if (query.sort) params.set("sort", query.sort);
+  const s = params.toString();
+  return s ? `?${s}` : "";
+}
+
+export const listSongs = (query: SongListQuery = {}) =>
+  apiFetch<{ songs: Song[] }>(`/api/songs${buildSongsQuery(query)}`).then(
+    (b) => b.songs,
+  );
+
+export const createSong = (payload: SongUpsertPayload) =>
+  apiFetch<{ song: Song }>("/api/songs", {
+    method: "POST",
+    ...jsonBody(payload),
+  }).then((b) => b.song);
+
+export const updateSong = (id: number, payload: SongUpsertPayload) =>
+  apiFetch<{ song: Song }>(`/api/songs/${id}`, {
+    method: "PATCH",
+    ...jsonBody(payload),
+  }).then((b) => b.song);
+
+export const deleteSong = (id: number) =>
+  apiFetch<void>(`/api/songs/${id}`, { method: "DELETE" });
+
+export const fetchGenreTags = () =>
+  apiFetch<{ genreTags: GenreTag[] }>("/api/genre-tags").then(
+    (b) => b.genreTags,
+  );
+
+// --- 設定・楽器・店舗（unit-07） --------------------------------------------
+
+export const getSettings = () =>
+  apiFetch<{ settings: SettingsMap }>("/api/settings").then((b) => b.settings);
+
+/** 既知キーのみの部分更新（PUT）。ネスト葉は親オブジェクトごと送る */
+export const putSettings = (entries: SettingsMap) =>
+  apiFetch<{ settings: SettingsMap }>("/api/settings", {
+    method: "PUT",
+    ...jsonBody(entries),
+  }).then((b) => b.settings);
+
+export const createInstrument = (payload: InstrumentCreatePayload) =>
+  apiFetch<{ instrument: Instrument }>("/api/instruments", {
+    method: "POST",
+    ...jsonBody(payload),
+  }).then((b) => b.instrument);
+
+export const updateVenue = (id: number, payload: VenueUpdatePayload) =>
+  apiFetch<{ venue: Venue }>(`/api/venues/${id}`, {
+    method: "PATCH",
+    ...jsonBody(payload),
+  }).then((b) => b.venue);
+
+// --- CSV インポート4段階（unit-08 API） ------------------------------------
+
+/** Step1: multipart アップロード → PREVIEW ジョブ作成 */
+export const uploadImport = (type: ImportType, file: File) => {
+  const form = new FormData();
+  form.append("file", file);
+  return apiFetch<PreviewResult>(`/api/import/${type}`, {
+    method: "POST",
+    body: form,
+  });
+};
+
+/** Step2: 解決内容の保存（PREVIEW 以外は 409） */
+export const saveResolutions = (jobId: number, payload: ResolutionsPayload) =>
+  apiFetch<{ job: ImportJobRef; resolutions: ResolutionsPayload }>(
+    `/api/import/jobs/${jobId}/resolutions`,
+    { method: "POST", ...jsonBody(payload) },
+  );
+
+/** Step3: ドライラン差分（DB 変更なし） */
+export const fetchDryRun = (jobId: number) =>
+  apiFetch<{ summary: DryRunSummary }>(
+    `/api/import/jobs/${jobId}/dry-run`,
+  ).then((b) => b.summary);
+
+/** Step4: コミット（PREVIEW 以外は 409） */
+export const commitImport = (jobId: number, payload: CommitPayload = {}) =>
+  apiFetch<{ summary: CommitSummary }>(
+    `/api/import/jobs/${jobId}/commit`,
+    { method: "POST", ...jsonBody(payload) },
+  ).then((b) => b.summary);
+
+/** ジョブ破棄（DISCARDED） */
+export const discardImport = (jobId: number) =>
+  apiFetch<void>(`/api/import/jobs/${jobId}`, { method: "DELETE" });
+
+// --- エクスポート（ファイルダウンロード。JSON パースを通さない別経路） -----
+
+/**
+ * GET /api/export をファイルとしてダウンロードする。
+ * content-disposition の filename を尊重し、blob→objectURL→<a download> クリック。
+ */
+export async function downloadExport(): Promise<void> {
+  const res = await fetch("/api/export", {
+    credentials: "same-origin",
+    headers: { Accept: "application/json" },
+  });
+  if (!res.ok) {
+    throw new ApiClientError(
+      res.status,
+      "INTERNAL_ERROR",
+      "エクスポートに失敗しました",
+    );
+  }
+  const disposition = res.headers.get("content-disposition") ?? "";
+  const match = /filename="?([^"]+)"?/.exec(disposition);
+  const filename = match?.[1] ?? "next-call-export.json";
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}

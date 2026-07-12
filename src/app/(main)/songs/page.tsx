@@ -1,5 +1,5 @@
-import { PlaceholderCard } from "@/components/shell/placeholder-card";
+import { SongListScreen } from "@/components/master/song-list-screen";
 
 export default function SongsPage() {
-  return <PlaceholderCard title="マスター" unit="unit-07 (曲マスター/設定画面)" />;
+  return <SongListScreen />;
 }

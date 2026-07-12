@@ -249,3 +249,153 @@ export interface PendingSongEntry {
   song: Song;
   createdAt: string;
 }
+
+// --- 曲マスター編集（unit-07） ----------------------------------------------
+
+/** 曲の編集可能属性（POST/PATCH で送る形。server songFields と一致） */
+export interface SongAttributes {
+  title: string;
+  songKey: string | null;
+  form: SongForm;
+  composer: string | null;
+  hasPlayed: boolean;
+  noChartOk: boolean;
+  isStandard: boolean;
+  simpleForm: boolean;
+  inKurobon1: boolean;
+  season: Season;
+  listenerLevel: number;
+  energyLevel: number;
+  needsReview: boolean;
+  note: string | null;
+  genreTags: string[];
+}
+
+/**
+ * POST /api/songs・PATCH /api/songs/:id のボディ（部分更新）。
+ * POST は title 必須（server 側 zod で担保）・PATCH は任意の部分集合。
+ */
+export type SongUpsertPayload = Partial<SongAttributes>;
+
+/** GET /api/songs のクエリ（サーバ側パラメータ。inKurobon1 はクライアント側フィルタ） */
+export interface SongListQuery {
+  q?: string;
+  needsReview?: boolean;
+  genre?: Genre;
+  season?: Season;
+  hasPlayed?: boolean;
+  sort?: "title" | "updated";
+}
+
+// --- 設定・楽器・店舗（unit-07） --------------------------------------------
+
+/** GET/PUT /api/settings の本体（key→値。値はシード型 number/boolean/object） */
+export type SettingsMap = Record<string, unknown>;
+
+/** POST /api/instruments のボディ */
+export interface InstrumentCreatePayload {
+  code: string;
+  label: string;
+  sortOrder?: number;
+}
+
+/** PATCH /api/venues/:id のボディ（部分更新） */
+export interface VenueUpdatePayload {
+  name?: string;
+  isHome?: boolean;
+}
+
+/** GET /api/genre-tags の 1 行 */
+export interface GenreTag {
+  id: number;
+  name: string;
+}
+
+// --- CSV インポート4段階（unit-08 API の UI 契約） --------------------------
+
+export type ImportType = "songs" | "setlists";
+
+/** バリデーションエラー行（Step2 のエラー行テーブル） */
+export interface ErrorRow {
+  line: number;
+  reason: string;
+  raw: Record<string, string>;
+}
+
+/** マスター未一致 title の近似候補 */
+export interface TitleCandidate {
+  songId: number;
+  title: string;
+  matchType: "exact" | "normalized" | "partial";
+}
+
+/** setlists のプレビューで人間の解決が必要な未知要素 */
+export interface SetlistUnknowns {
+  venues: string[];
+  titles: Array<{ csvTitle: string; candidates: TitleCandidate[] }>;
+}
+
+/** unknowns: songs は空オブジェクト・setlists は SetlistUnknowns */
+export type ImportUnknowns = Record<string, never> | SetlistUnknowns;
+
+/** ImportJob の識別情報（プレビュー応答・resolutions 応答が返す） */
+export interface ImportJobRef {
+  id: number;
+  type: ImportType;
+  status: string;
+}
+
+/** POST /api/import/:type（201）の本体 */
+export interface PreviewResult {
+  job: ImportJobRef;
+  totalRows: number;
+  validRows: number;
+  errors: ErrorRow[];
+  unknowns: ImportUnknowns;
+}
+
+/** 曲名解決の 1 件 */
+export interface TitleResolution {
+  action: "match" | "create_stub" | "skip";
+  songId?: number;
+}
+
+/** POST /api/import/jobs/:jobId/resolutions のボディ */
+export interface ResolutionsPayload {
+  /** { venue_name: isHome } */
+  venues: Record<string, boolean>;
+  /** { csvTitle: { action, songId? } } */
+  titles: Record<string, TitleResolution>;
+}
+
+/** GET /api/import/jobs/:jobId/dry-run の summary */
+export interface DryRunSummary {
+  type: ImportType;
+  songsToCreate: number;
+  songsToUpdate: number;
+  venuesToCreate: number;
+  unresolvedVenues: number;
+  sessionsToCreate: number;
+  duplicateSessions: number;
+  performancesToCreate: number;
+  skippedRows: number;
+  stubsToCreate: number;
+}
+
+/** POST /api/import/jobs/:jobId/commit の summary */
+export interface CommitSummary {
+  type: ImportType;
+  songsCreated: number;
+  songsUpdated: number;
+  venuesCreated: number;
+  sessionsCreated: number;
+  performancesCreated: number;
+  stubsCreated: number;
+  skippedRows: number;
+  hasPlayedRecalculated: number;
+}
+
+/** POST /api/import/jobs/:jobId/commit のボディ（任意） */
+export interface CommitPayload {
+  recalcHasPlayed?: boolean;
+}

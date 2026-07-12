@@ -1,5 +1,5 @@
-import { PlaceholderCard } from "@/components/shell/placeholder-card";
+import { SettingsScreen } from "@/components/master/settings-screen";
 
 export default function SettingsPage() {
-  return <PlaceholderCard title="設定" unit="unit-07 (曲マスター/設定画面)" />;
+  return <SettingsScreen />;
 }
