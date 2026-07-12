@@ -8,7 +8,6 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { GENRE_TAG_NAMES, INSTRUMENT_SEEDS } from "@/db/seed";
 import {
   expectApiError,
-  getRequest,
   jsonRequest,
   routeParams,
   setupTestDb,
