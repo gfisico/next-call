@@ -184,7 +184,16 @@ export const performances = sqliteTable(
     note: text("note"),
     createdAt: text("created_at").notNull().default(utcNow),
   },
-  (table) => [index("idx_performances_session").on(table.sessionId)],
+  (table) => [
+    index("idx_performances_session").on(table.sessionId),
+    /** 曲別集計（登場回数・最終演奏日・コール回数）用（unit-04） */
+    index("idx_performances_song").on(table.songId),
+    /** 「直前の曲」= セッション内 order_index 最大の行の取得用（unit-04） */
+    index("idx_performances_session_order").on(
+      table.sessionId,
+      table.orderIndex,
+    ),
+  ],
 );
 
 /**
@@ -255,10 +264,19 @@ export const recommendationRequests = sqliteTable(
     conditionSignature: text("condition_signature").notNull(),
     /** Stage1–3 通過曲数（緩和判定の記録。仕様§14.3） */
     poolSize: integer("pool_size").notNull().default(0),
+    /** 乱数シード（同一 request の再現用。unit-04 で追加） */
+    seed: integer("seed").notNull().default(0),
   },
   (table) => [
     index("idx_reco_requests_session").on(table.sessionId),
     index("idx_reco_requests_signature").on(table.conditionSignature),
+    /** 30日 window での履歴読み取り用（unit-04） */
+    index("idx_reco_requests_requested_at").on(table.requestedAt),
+    /** 同一署名×期間の提示回数集計用（unit-04） */
+    index("idx_reco_requests_signature_requested").on(
+      table.conditionSignature,
+      table.requestedAt,
+    ),
   ],
 );
 

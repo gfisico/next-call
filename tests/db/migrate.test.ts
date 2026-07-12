@@ -48,4 +48,35 @@ describe("runMigrations", () => {
     runMigrations(handle.db);
     expect(() => runMigrations(handle.db)).not.toThrow();
   });
+
+  it("0001（additive）: seed 列と集計用インデックスが作成される", () => {
+    const dir = mkdtempSync(path.join(tmpdir(), "next-call-migrate3-"));
+    const handle = openDatabase(path.join(dir, "empty.db"));
+    runMigrations(handle.db);
+
+    // recommendation_requests.seed 列（NOT NULL DEFAULT 0）
+    const cols = handle.sqlite
+      .prepare("PRAGMA table_info(recommendation_requests)")
+      .all() as Array<{ name: string; notnull: number; dflt_value: unknown }>;
+    const seedCol = cols.find((c) => c.name === "seed");
+    expect(seedCol).toBeDefined();
+    expect(seedCol?.notnull).toBe(1);
+
+    // unit-04 で追加した集計用インデックス
+    const indexNames = (
+      handle.sqlite
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE type='index' AND name LIKE 'idx_%'",
+        )
+        .all() as Array<{ name: string }>
+    ).map((r) => r.name);
+    expect(indexNames).toEqual(
+      expect.arrayContaining([
+        "idx_performances_song",
+        "idx_performances_session_order",
+        "idx_reco_requests_requested_at",
+        "idx_reco_requests_signature_requested",
+      ]),
+    );
+  });
 });

@@ -318,6 +318,11 @@ export interface EngineResult {
   pendingSongs: PendingAnnotation[];
   /** 候補が candidate_count 未満のとき true（無理に増やさない。仕様§14.5） */
   isSparse: boolean;
+  /**
+   * Stage 1 通過曲数（recommendation_requests.pool_size の記録用。unit-04 で additive 追加）。
+   * スコアロジックには影響しない。
+   */
+  poolSize: number;
 }
 
 /** Stage 6–7 の入出力用 */

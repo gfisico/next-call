@@ -58,7 +58,13 @@ export function recommend(
   // 保留曲の注釈（スコア不干渉・無条件表示 §16）
   const pendingSongs = annotatePendingSongs(input, config);
 
-  return { candidates, conditionalCandidates, pendingSongs, isSparse };
+  return {
+    candidates,
+    conditionalCandidates,
+    pendingSongs,
+    isSparse,
+    poolSize: passed.length,
+  };
 }
 
 export * from "./types";
