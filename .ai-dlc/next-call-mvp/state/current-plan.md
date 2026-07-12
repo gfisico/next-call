@@ -1,118 +1,98 @@
-# 実装計画 — unit-06-recommend-screen（選曲支援・推薦結果画面）
+# 実装計画 — unit-07-master-settings-screen（frontend / Bolt 1）
 
-- **Unit:** unit-06-recommend-screen / **Intent:** next-call-mvp
-- **Discipline:** frontend
-- **Branch:** ai-dlc/next-call-mvp/06-recommend-screen（worktree: next-call-mvp-06-recommend-screen）
-- **View:** `/sessions/[id]/recommend`（1画面・条件を上、結果を下に配置。モーダル遷移を避ける）
-- **Bolt:** 1（全タスクを1ボルトで実装）
+## 概要
+曲マスター（一覧・編集）／設定（エンジン・楽器・母店・エクスポート）／CSVインポートウィザード（4段階UI）を実装する。
+API はすべて実装済み（unit-03 マスタ/設定/エクスポート・unit-08 インポート4段階）。本ユニットは **UIのみ**（パース/解決/コミット処理・API 追加はしない）。
+唯一の fetch 集約点 `src/lib/api/client.ts` を拡張し、SWR フックとフォームは必ずここを通す（criterion 5 の fetch モックテスト容易化）。
 
-## 依存・前提（調査済みの確定事項）
+## 事前調査で確定した事実（設計判断の根拠）
+- **API 契約**（既存・そのまま利用）:
+  - `GET /api/songs?q&needsReview&genre&season&hasPlayed&sort=title|updated` → `{ songs: Song[] }`（title 部分一致・フィルタは AND・サーバ側）
+  - `POST /api/songs`（title のみ必須・他は DB 既定）→201 `{ song }`／`PATCH /api/songs/:id`（部分更新・needsReview 解除・genreTags 差し替え）→`{ song }`／`DELETE /api/songs/:id`→204、参照中は **409 CONFLICT**
+  - `GET/PUT /api/settings` → `{ settings: Record<string,unknown> }`。PUT は既知キーのみ strict（未知キー400）、値の型はシード型（number/boolean/object）
+  - `GET/POST /api/instruments`（POST=201・code 重複409）、`PATCH /api/venues/:id`（name/isHome）、`GET /api/genre-tags`、`GET /api/venues`
+  - `GET /api/export` → JSON 添付（`content-disposition: attachment`）
+  - インポート4段階（handoff 通り・ジョブ系は `import/jobs/[jobId]` 配下）:
+    1. `POST /api/import/[type]`（type=songs|setlists・**multipart/form-data**の file）→201 `{ job:{id,type,status}, totalRows, validRows, errors:ErrorRow[], unknowns }`（setlists の unknowns= `{venues:string[], titles:[{csvTitle,candidates:TitleCandidate[]}]}`、songs は `{}`）
+    2. `POST /api/import/jobs/[jobId]/resolutions` body `{ venues:{[name]:boolean}, titles:{[csvTitle]:{action:"match"|"create_stub"|"skip", songId?}} }` → PREVIEW 以外は409
+    3. `GET  /api/import/jobs/[jobId]/dry-run` → `{ summary: DryRunSummary }`（songsToCreate/Update, venuesToCreate, unresolvedVenues, sessionsToCreate, duplicateSessions, performancesToCreate, skippedRows, stubsToCreate）
+    4. `POST /api/import/jobs/[jobId]/commit` body `{ recalcHasPlayed?:boolean }` → `{ summary: CommitSummary }`（...Created 各種 + hasPlayedRecalculated）／`DELETE .../[jobId]`→204（DISCARDED）
+- **設定値の唯一の情報源**: `src/db/seed.ts` の `SETTING_SEEDS`（discovery「Provisional Values」を転記済み）。既定値・キー集合はここに一致させる。
+- **既存の再利用資産**: `Segment`(radiogroup) / `Toggle`(pill radiogroup) / `Badge` / `Card` / `Button` / `Checkbox` / `Dialog`(shadcn) / `Table`(shadcn) / `ConfirmDialog`(session/confirm-dialog.tsx) / `ios-slider`。Toaster は `(main)/layout.tsx` にマウント済み・testing-library 導入済み・SWR 採用・dom テスト基盤（tests/setup/dom.ts, helpers/mock-fetch.ts, helpers/render.tsx renderWithSWR）あり。
+- **共有シェル**: `(main)/layout.tsx` の `<main>` は `max-w-lg`（モバイル最適・unit-05/06 が依存）。
 
-### API 契約（unit-04・そのまま利用。追加API不要）
-- `GET /api/sessions/:id/recommendations/defaults` → `{ defaults: { intent, conditions, suggestSeasonalOn } }`
-  - `intent`: `{ rare, fresh, safety, mood, ballad }`（各 -2..+2 の整数）+ `{ seasonal, listener }`（bool）。前回値（intent.last_values）が無ければ全 0・チェック OFF。
-  - `conditions`: `{ horns:"UNKNOWN", beginner:"UNKNOWN", kurobon1Only:false, genreOverride:[] }`（既定）。
-  - `suggestSeasonalOn`: boolean。**API はフラグを返すだけ。1曲目のときの季節感 ON 初期化は本ユニット UI が行う**（defaults route コメント・仕様§9.7）。
-- `POST /api/sessions/:id/recommendations`（201）body:
-  - `{ conditions:{ horns:"ONE|MULTI|UNKNOWN", beginner:"NONE|PRESENT|UNKNOWN" }, constraints:{ kurobon1Only:boolean, genreOverride?:Genre[] }, intent:{ rare,fresh,safety,mood,ballad,seasonal,listener } }`
-  - レスポンス `{ recommendation: RecommendationView }`。`RecommendationView`（src/server/recommendation/service.ts）:
-    - `requestId, seed, isSparse:boolean, poolSize:number`
-    - `candidates: [{ song: SongWithTags, score, reasons:[{code,text}], isPending }]`（理由は 2〜4 件・APIそのまま表示）
-    - `conditionalCandidates: [{ song, score, reasons, branch:"HORNS_ONE|HORNS_MULTI|BEGINNER_NONE|BEGINNER_PRESENT", conditionLabel:string }]`（存在時のみ・ラベルは API 提供の `conditionLabel` をそのまま表示）
-    - `pendingSongs: [{ song, warnings:["PLAYED_TODAY"|"SAME_FORM"|"KUROBON1_MISMATCH"|"FORMATION_MISMATCH"] }]`（**現在条件で再評価された警告**。保留曲枠はここを情報源にする）
-  - `SongWithTags` = songs 行（title, songKey, form, composer, inKurobon1 等）+ `genreTags:string[]`。メタ行は `key: {songKey} ・ {form} ・ {composer}` で表示。
-  - セッションが ACTIVE でないと 409、無ければ 404。
-- `POST /api/pending-songs` body `{ songId }`（201・冪等）= 保留に追加 / `DELETE /api/pending-songs/:songId`（204）= 保留解除。
-- コール登録は unit-05 の `SongPerformanceSheet` 経由（`addPerformance`）。calledByMe=true 保存時にサーバ側で保留が自動解除される（unit-04）。
+## 設計判断（調査で判明した制約への対処）
+1. **エンジン設定は「スライダー」でなく「数値入力」を採用**。理由: 共有 `ios-slider` は min=-2/max=2/step=1 固定で、engine.* は 730・15・0.05 等レンジがバラバラで不適合。ワイヤーフレーム Screen 3 自体も数値入力フィールド（`.field.sm`）で描画している。→ 各項目は `type=number` の入力＋min/max（zod と整合）＋説明文＋グループ単位「既定値に戻す」。boolean 項目は既存 `Toggle` を流用。
+2. **「黒本1」フィルタチップはクライアント側フィルタ**。GET /api/songs に inKurobon1 パラメータが無いため、取得済みリストを `song.inKurobon1` で絞り込む（一覧は数百件で軽量・API 境界を侵さない）。needsReview/hasPlayed/season/genre はサーバ側パラメータを使用。
+3. **設定のネスト JSON キー**（repeat_penalties, slider_weights, safety_weights, same_key_penalty_overrides, consecutive_genre, season_months）は、`settings-meta` で「親キー＋パス」を持つ葉フィールドとして展開編集。保存時は現在の親オブジェクトへ葉値をマージして親キーごと PUT する（PUT は object 型を丸ごと受ける）。複雑・非数値の season_months は読み取り専用表示に留める。
+4. **インポートの再開（中断中ジョブ一覧）はクライアント sessionStorage で実現**。プレビュー応答（errors/unknowns/counts）を再取得する GET API が unit-08 に存在しない（jobs 一覧/単体 GET 無し）ため、Step2 復元に必要なデータをサーバから引けない。→ ウィザード進行状態（jobId・type・プレビュー結果・解決選択・現在ステップ）を sessionStorage に保存し、`/settings/import` 上部に「中断中のインポート」を同ストアから列挙して再開。※ 別端末/別ブラウザ再開は範囲外（unit-08 に GET /api/import/jobs を足す followup 候補として明記）。
+5. **multipart アップロード対応**: `apiFetch` は body があると `Content-Type: application/json` を付与するため FormData で壊れる。→ `apiFetch` に「body が FormData なら JSON ヘッダを付けない」分岐を追加し、`uploadImport(type, file)` を新設。
+6. **エクスポートDL**: `downloadExport()` を新設（fetch→blob→objectURL→`<a download>` クリック）。JSON パースを通さないため apiFetch とは別経路。
+7. **PC(1024px) 対応**: 共有シェルの `max-w-lg` は維持（session 画面の意匠を壊さない）。マスター一覧/インポートの表は `overflow-x-auto` で横スクロールし崩さない（criterion 7=崩れない）。真の広幅が要る一覧/表は lg+ でフルブリード（`lg:w-screen lg:relative lg:left-1/2 lg:-translate-x-1/2 lg:max-w-[1024px]`）に展開する方式を採る。モバイルはカードリスト、sm+ はテーブル表示。
 
-### 再利用コンポーネント / 基盤
-- **`src/components/session/song-performance-sheet.tsx`（再利用・重複実装禁止）**: 「この曲をコール」は `mode="create"` + `initialSong={id,title}` + `initialCalledByMe={true}` で開く（検索UI非表示・選択済み表示になることは sheet-reuse-contract テストで担保済み）。`onSaved` で保存完了を受け、`/sessions/[id]` へ遷移。
-- **`src/components/ui/slider.tsx`**: shadcn/ui（radix-ui Slider）ベース。本ユニットで作る ios-slider の土台。
-- **`src/components/session/segment.tsx`**: `Segment<T>`（radiogroup・aria-checked・h-10・focus ring）を編成/制約セグメントに再利用。
-- **`src/lib/api/client.ts` / `hooks.ts` / `types.ts`**: fetch 集約点。ここに推薦系のヘルパ・型・SWR フックを追加する（唯一の fetch 経路 = テストが installFetch でモックしやすい）。
-- **Toaster**: `(main)/layout.tsx` にマウント済み（sonner）。保存/通信失敗の通知に利用可。
-- **テスト基盤**: vitest projects（node/dom 分離）。dom テストは `tests/components/**/*.test.tsx`、`tests/setup/dom.ts`（Radix polyfill・scrollIntoView は vi.fn 済み）、ヘルパ `installFetch`/`bodyOf`（helpers/mock-fetch.ts）と `renderWithSWR`（helpers/render.tsx）を使用。
+## タスク（Bolt 1）
 
-### ルーティングの現状と是正
-- 記録画面（session-record-screen.tsx L256）の「次の曲を考える」は現状 `router.push("/suggest")`（プレースホルダ）。**本ユニットで `/sessions/${session.id}/recommend` へ変更**（2タップ担保・仕様§17.2）。
-- `/suggest`（bottom-nav「推薦」タブ）はプレースホルダのまま残さず、**進行中セッションがあればその recommend 画面へ誘導、無ければ「進行中セッションがありません」空状態**に差し替える（`useActiveSession` 利用・迷子導線の解消）。
+### Task 1 — API クライアント/フック/型の拡張（土台）
+- `src/lib/api/types.ts`: `SongUpsertPayload`（全属性 partial・title 必須）, `Instrument`（既存）, `InstrumentCreatePayload`, `VenueUpdatePayload`, `SettingsMap=Record<string,unknown>`, インポート系型（`ImportType`, `ErrorRow`, `TitleCandidate`, `SetlistUnknowns`, `PreviewResult`, `ResolutionsPayload`, `DryRunSummary`, `CommitSummary`）を追加（サーバ実装の shape に一致）。
+- `src/lib/api/client.ts`: `listSongs(query)` / `createSong` / `updateSong` / `deleteSong` / `getSettings` / `putSettings(entries)` / `createInstrument` / `updateVenue` / `fetchGenreTags` / `uploadImport(type,file)` / `saveResolutions` / `fetchDryRun` / `commitImport` / `discardImport` / `downloadExport` を追加。`apiFetch` に FormData 分岐を追加。
+- `src/lib/api/hooks.ts`: `useSongs(query)` / `useSettings()` / `useInstruments()`（既存を拡張） / `useVenues()`（既存） / `useGenreTags()`、`SWR_KEYS` に songs(list key)・settings・genreTags を追加。ミューテーション後 `mutate` 再検証運用を踏襲。
+- 対象基準: 全基準の土台（特に 5=fetch モックの単一集約点）。
 
-## タスク一覧（Bolt 1）
+### Task 2 — 共有UI部品の追加（design_rule 準拠・既存優先）
+- `src/components/ui/chip.tsx`: フィルタ/選択チップ（`role` 準拠・aria-pressed・rounded-full・色＋太字で状態表現）。単一/複数選択の両用途。
+- `src/components/ui/number-field.tsx`: ラベル＋説明＋`type=number`（min/max/step）＋focus-visible ring（design_rule §6.4）。
+- `src/components/master/wizard-steps.tsx`: 4段階ステッパ（done/on/todo・aria-current）。
+- ジャンル9チップは Task4/6 で `GENRE`定数（types の `Genre`）＋Chip で構成。既存 Segment/Toggle/Badge/Table/Dialog/ConfirmDialog を最大限流用（新規は上記3点のみ）。
+- 対象基準: 8（design_rule 準拠：チップ・フォーム・バッジ・テーブル・トースト）。
 
-### Task 1 — 共有 iOS 風スライダー `src/components/ui/ios-slider.tsx`
-- shadcn/ui `Slider`（radix）をベースにした**共有コンポーネント**（unit-07 設定画面のスライダーも本コンポーネントで統一）。
-- props: `{ name:string, leftLabel:string, rightLabel:string, value:number(-2..+2), onChange:(v)=>void, ariaLabel? }`。
-- 仕様: `min=-2, max=2, step=1` の**5段階スナップ**。外観は Apple(iOS)風 = 細レール（`h-1` 相当）+ **中央（0）起点の青系ティント fill** + 白い円形ノブ（`shadow` 付き・`ring`）+ 5段階のドット。ノブ上に名前、レール上に左右ラベル（`ends`）を直接表示（仕様§9.1）。
-- **中央起点 fill の実装注意**: radix `Range` は min 起点でしか塗れないため、Range は使わず（または非表示にし）、value から `left/width` を算出した独立の fill 要素を絶対配置で重ねて中央起点ティントを描画する。ドットは 0/25/50/75/100% に配置。
-- アクセシビリティ/操作性: タッチ領域を `after:-inset-*` で拡大（誤タッチ低減）、`focus-visible:ring`、キーボード操作（矢印キー = step 移動）は radix 標準を維持。ダークモード対応クラス。
-- targets: criterion 9（design_rule 準拠・shadcn ベース）、Risk「スライダーのモバイル操作性」。
+### Task 3 — 曲マスター一覧 `/songs`
+- `src/app/(main)/songs/page.tsx` を実画面に差し替え（`SongListScreen` を `src/components/master/song-list-screen.tsx` に実装）。
+- 検索: 入力 → debounce 250ms（`useSongs` に q 反映・既存 useSongSearch と同方式）。フィルタチップ: 属性未整備(needsReview)／コール可能(hasPlayed)／黒本1(client filter)／季節(単一選択 dropdown)／ジャンル(単一選択 dropdown)。複数チップは AND。
+- 上部に **「属性未整備 n曲」バナー**（needsReview=true 件数を別クエリで取得）→ タップで needsReview フィルタ適用（1タップ補完導線）。
+- 「＋新規追加」→ `/songs/new` へ push。行タップ→ `/songs/[id]`。
+- レスポンシブ: モバイル=カードリスト（曲名・key/構成/黒本1 バッジ・needsReview 警告バッジ）、sm+=テーブル（overflow-x-auto・lg+ フルブリード）。
+- 対象基準: 1（検索・各フィルタ・needs_review ショートカット）、7（375/1024）、8。
 
-### Task 2 — 推薦系の API クライアント・型・フック
-- `src/lib/api/types.ts` に DTO 追加: `RecommendationIntent`（rare/fresh/safety/mood/ballad/seasonal/listener）、`RecommendationConditions`、`RecommendationDefaults`、`ReasonView`（code,text）、`RecommendationCandidateView`、`ConditionalCandidateView`（branch, conditionLabel）、`PendingSongView`（warnings）、`RecommendationResult`、`Genre` 型（chip 用サブセット）、`RecommendationRequestPayload`。
-- `src/lib/api/client.ts` に追加: `fetchRecommendationDefaults(sessionId)`, `postRecommendation(sessionId, payload)`, `fetchPendingSongs()`, `addPendingSong(songId)`, `removePendingSong(songId)`（既存のエンベロープ剥がし・ApiClientError 規約に準拠）。
-- `src/lib/api/hooks.ts` に `useRecommendationDefaults(sessionId)`（SWR・GET defaults）を追加。POST/pending 変更は client 直呼び（既存運用）。
-- targets: criterion 1（一連フローの土台）、テスト容易性。
+### Task 4 — 曲編集 `/songs/[id]` ＋ `/songs/new`
+- `src/app/(main)/songs/[id]/page.tsx`・`src/app/(main)/songs/new/page.tsx`（共通 `SongEditScreen` を `src/components/master/song-edit-screen.tsx` に）。
+- 全属性フォーム: 曲名(必須)・黒本キー・構成(Segment: AABA/ABAC/BLUES12/OTHER)・作曲者・演奏経験あり/譜面なし対応可/超定番/構成が単純/黒本1曲載(Checkbox)・季節(Segment 春/夏/秋/冬/通年)・リスナー受け度/盛り上がり度(Segment 1–5)・ジャンルタグ(9チップ複数選択)・メモ。
+- 新規=`createSong`(POST)、既存=`updateSong`(PATCH)。title 重複 409 はトースト表示。
+- **needs_review 解除**: 「属性の入力が完了しましたか？」チェック → 保存時に `needsReview:false` を送る。「保存して次の未整備曲へ」= 保存後に needsReview 一覧の次曲へ push（連続補完）。
+- 削除: Destructive ボタン → `ConfirmDialog` → `deleteSong`。**409 CONFLICT を捕捉して「履歴があるため削除できません」** を error-block/トーストで表示。
+- 対象基準: 2（全属性・ジャンル複数・needs_review 解除）、3（削除409）、7、8。
 
-### Task 3 — 条件入力セクション（画面上部）
-- 実装場所: `recommend-screen.tsx` 内のサブセクション（必要なら小コンポーネントに分割）。
-- **編成条件**: 管楽器 `Segment`（1人=ONE/複数=MULTI/わからない=UNKNOWN・既定 UNKNOWN）、初心者 `Segment`（いない=NONE/いる=PRESENT/わからない=UNKNOWN・既定 UNKNOWN）。
-- **制約**: 黒本1 `Segment`（制限なし=false / 黒本1曲載のみ=true・毎回変更可・仕様§11.2）+ 補助文。
-- **ジャンル上書き（任意・折りたたみ既定 OFF）**: チップ複数選択 = ボサノバ/3拍子/モード/ファンク/ブルース/歌もの/循環（バラードは独立スライダーのため除外・「キメが多い曲」も UI 非対象）。説明文「指定すると該当ジャンルを**強く優先**します（絞り込みではありません）」（仕様§10・「絞り込み」表記禁止）。
-- **今回の意図**: `IosSlider` ×5 = 珍しい曲（強い減点⇔強い加点=rare）/久しぶりの曲（強い減点⇔強い加点=fresh）/攻め方（安全に行く⇔攻める=safety）/場の温度（落ち着かせる⇔盛り上げる=mood）/バラード（避けたい⇔やりたい=ballad）。
-- **チェック×2**: 季節感（セッション日付から季節ラベルを導出し「{季節}の曲を重視」表示。利用者は季節を選ばない・仕様§9.7）/ リスナー受け（リスナー客なしでも無効化せず既定 OFF）。季節ラベルは `session.sessionDate` から既定の月境界（春3-5/夏6-8/秋9-11/冬12-2）でクライアント導出（season_months はサーバ設定でフロント非公開のため既定境界を使用）。
-- targets: criterion 2（前回値引き継ぎ表示・変更した項目だけ変わる）, criterion 3（1曲目季節感）, criterion 9。
+### Task 5 — 設定 `/settings`
+- `src/app/(main)/settings/page.tsx` を実画面に（`SettingsScreen` を `src/components/master/settings-screen.tsx` に）。
+- `src/lib/settings-meta.ts` を新設: 各編集項目の {key or 親key+path, group(除外・減点/意図の重み/繰り返し減点/抽選/候補数), label(日本語表示名), desc(説明・既定値), type(number|boolean), min/max/step, default} を **SETTING_SEEDS（discovery Provisional Values）から転記**。これが表示名・説明・グループの UI 側唯一の情報源。
+- エンジン設定: グループ見出し＋説明＋各項目（数値=NumberField / boolean=Toggle）＋グループ単位「既定値に戻す」。項目過多対策で「繰り返し減点／抽選／候補数」等は折りたたみ（collapse）。
+- 変更は **PUT /api/settings で即時保存**（onBlur/確定時）→ 成功トースト「保存しました（次回の推薦から有効）」。範囲外は input min/max ＋ API zod で防止。ネスト葉は親オブジェクトへマージして PUT。`long_unplayed_days` は handoff の「実装未使用」注記を desc に添える。
+- 楽器マスター: 一覧チップ＋（コード・表示名）入力→`createInstrument`（code 重複409 トースト）。
+- 母店設定: venues 一覧を Toggle(母店/母店以外)→`updateVenue({isHome})`。
+- データ管理: 「全データをエクスポート」→`downloadExport()`、「CSVインポート →」→ `/settings/import`。Primary は置かない（design_rule §9・ワイヤーフレーム指示）。
+- 対象基準: 4（engine.* 変更保存・既定値に戻す）、6（エクスポートDL）、7、8。
 
-### Task 4 — 推薦結果セクション（画面下部）
-- **通常候補カード**: 曲名（大）+ メタ行（key/form/composer）+ 推奨理由の箇条書き（`reasons` を **API 文字列そのまま** 2〜4 件・フロント加工しない）+ `isPending` 時「保留中」warning バッジ。アクション（Secondary 統一・画面内 Primary は下部固定の再抽選のみ）: 「この曲をコール」/「保留に追加」（保留中の曲は「保留に追加」を disabled）。
-- **isSparse 注記**: `isSparse===true` のとき「条件が強く、候補が {candidates.length} 曲に絞られました。条件を緩めるとさらに提案できます。」の info コールアウト（無理に候補を増やさない・仕様§14.5）。
-- **条件別候補**: `conditionalCandidates` が存在するときのみ、`conditionLabel`（「1管なら」等・API 提供）を info バッジで冠したラベル付きカードで通常候補と区別して表示。
-- **保留曲枠（結果最下部・常時表示）**: `recommendation.pendingSongs` を情報源に全保留曲を表示（条件に関係なく全件）。`warnings` を warning バッジで表示（本日演奏済み/直前と同構成/黒本1条件外/編成に合いにくい）。警告があってもコール可。アクション: 「コール」（→ シート）/「保留解除」（DELETE → 行削除・結果を再取得 or ローカル更新）。状態は色+テキスト（design_rule §8.2）。
-- design_rule 準拠: Card=`rounded-xl border bg-card shadow-sm`、Badge は variant（warning/info/success）、Button variant=secondary、h-10 タップ領域。
-- targets: criterion 4（理由2件以上・isSparse注記）, criterion 5（条件別ラベル区別）, criterion 6（保留枠・警告・コール・解除）, criterion 9。
+### Task 6 — CSVインポートウィザード `/settings/import`
+- `src/app/(main)/settings/import/page.tsx`（`ImportWizard` を `src/components/master/import-wizard.tsx` に・4ステップ state machine）。
+- **Step1 アップロード**: type Segment(曲マスター/セットリスト履歴)＋file 選択→`uploadImport`→PREVIEW 応答を state＋sessionStorage 保存→Step2。上部に「中断中のインポート」を sessionStorage から列挙し「再開」。
+- **Step2 プレビュー**: 総行/有効/エラー件数サマリ＋バッジ。エラー行テーブル（行/理由/元データ・overflow-x-auto）。**setlists のみ**: 未知店舗の母店区分（Toggle）・曲名不一致解決（Segment: 候補に一致/新規スタブ作成/スキップ・近似候補表示・未解決件数バッジ・「未解決をすべてスタブ作成」一括）。→ `saveResolutions` 後「ドライラン実行」で Step3。「戻る」可。
+- **Step3 ドライラン**: `fetchDryRun` の差分サマリをテーブル表示（新規曲/更新/新規店舗/新規セッション/演奏記録/スキップ/スタブ・unresolvedVenues>0・duplicateSessions>0 は警告）。「戻る」で Step2 の解決修正、「コミットへ」で Step4。
+- **Step4 コミット/結果**: `recalcHasPlayed` チェック→`commitImport`→結果サマリ（hasPlayedRecalculated 含む）を success カードで表示。「破棄」=`ConfirmDialog`→`discardImport`→sessionStorage 破棄→Step1。409（既に COMMITTED/DISCARDED）はトースト。
+- 対象基準: 5（4段階＋全分岐）、7、8。
 
-### Task 5 — 画面統合・ルーティング・コール登録フロー
-- `src/components/session/recommend-screen.tsx`（"use client"・props `{ sessionId:number }`）を新設し、Task 3/4 を統合（page から params を分離してテスト可能にする）。
-- `src/app/(main)/sessions/[id]/recommend/page.tsx`: `useParams` で id 解決 → `RecommendScreen`。無効 id / セッション取得不可時のフォールバック（sessions/[id] と同様）。
-- **状態管理**: `useRecommendationDefaults` で初期 state（intent/conditions/genreOverride/checks）をロード。**1曲目（suggestSeasonalOn=true）のとき seasonal を推奨 ON で初期化**（ユーザーは OFF に変更可）。ロード後の編集はローカル state。
-- **「候補を出す」**（下部固定 Primary）: `submitting` state で**二重実行防止**（実行中はボタン無効化 + 結果領域スケルトン表示）。POST 成功後 `result` を state 保持し、結果セクションへ `ref.scrollIntoView({behavior:"smooth"})` で**自動スクロール**。失敗時は toast/インラインエラー。
-- **「条件を変えて再抽選」**（結果表示後の下部固定・Secondary）: 意図セクション先頭へスクロール（再実行は新規 POST として保存＝繰り返し減点が効く）。
-- **「この曲をコール」/「コール」**: `SongPerformanceSheet` を `mode="create" + initialSong + initialCalledByMe=true` で開く。`onSaved` で `/sessions/${sessionId}` へ `router.push`（保存時に保留は自動解除される）。
-- **「保留に追加」/「保留解除」**: client 直呼び後、保留状態を反映（結果の再取得 or 楽観更新）。
-- **ナビ是正**: session-record-screen.tsx の「次の曲を考える」を `/sessions/${session.id}/recommend` に変更。`/suggest/page.tsx` を `useActiveSession` で active があれば recommend へ誘導・無ければ空状態に差し替え。
-- 画面縦長化対策: ジャンル上書き折りたたみ既定 + 結果自動スクロール（Risk 対応）。
-- targets: criterion 1（一連フロー）, criterion 7（コール→シート→保存→セッション画面）, criterion 8（最短2タップ）, Risk「結果待ちの体感」「画面縦長化」。
-
-### Task 6 — dom テスト（tests/components/*.test.tsx・375px・testing-library・installFetch）
-- `next/navigation`（useParams/useRouter）を vi.mock し、`RecommendScreen`（sessionId prop）を `renderWithSWR` で描画。fetch は `installFetch` の route ハンドラでモック。
-- ケース:
-  1. **一連フロー（criterion 1）**: defaults GET → スライダー/チェック/編成/制約変更 → 「候補を出す」→ POST が期待 payload（`bodyOf`）で呼ばれ、候補+理由が表示。
-  2. **前回値引き継ぎ（criterion 2）**: defaults の intent 非中央値が初期表示に反映、1項目だけ変更 → 変更項目のみ payload に反映。
-  3. **1曲目季節感（criterion 3）**: `suggestSeasonalOn=true` で季節感チェック ON 初期化、OFF に変更でき payload seasonal=false。
-  4. **理由/isSparse（criterion 4）**: 候補カードに reasons 2 件以上、`isSparse=true` で注記表示。
-  5. **条件別候補（criterion 5）**: horns=UNKNOWN のモックで conditionalCandidates を `conditionLabel` 付きで通常候補と区別表示。
-  6. **保留曲枠（criterion 6）**: pendingSongs（warnings 付き）を常時表示、警告バッジ表示、「保留解除」で DELETE 呼び出し・行削除、「コール」でシートが開く。
-  7. **コール登録（criterion 7）**: 「この曲をコール」→ シートが `initialSong` 固定 + calledByMe=true で開く → 保存 → `router.push("/sessions/1")`。
-  8. **2タップシナリオ（criterion 8）**: defaults ロード後すぐ「候補を出す」→ POST 実行（条件調整なしで候補到達）を検証。
-- targets: criterion 1〜8 の検証。
-
-## 成功基準カバレッジ（9/9）
-1. defaults→変更→候補を出す→候補+理由（375px モック）: Task 5 + Task 6-1
-2. 前回意図値引き継ぎ・変更項目のみ反映: Task 3 + Task 5 + Task 6-2
-3. 1曲目季節感 推奨 ON→OFF 可: Task 3 + Task 5 + Task 6-3
-4. 理由2件以上・isSparse 注記: Task 4 + Task 6-4
-5. 条件別候補ラベル区別: Task 4 + Task 6-5
-6. 保留曲枠 独立常時表示・警告・コール・解除: Task 4 + Task 5 + Task 6-6
-7. この曲をコール→シート（calledByMe=true・曲確定）→保存→セッション画面: Task 5 + Task 6-7
-8. 最短2タップ: Task 5（ナビ是正）+ Task 6-8
-9. design_rule 準拠（shadcn ベース・スライダー/チップ/カード/バッジ）: Task 1・3・4 全体
+### Task 7 — DOM テスト（fetch モックで全分岐）
+- 基盤: `tests/components/helpers/{mock-fetch(installFetch/bodyOf), render(renderWithSWR)}` と next/navigation モックを踏襲。新規 dom テストを `tests/components/` に追加。
+- 一覧（`song-list.test.tsx`）: 検索 debounce で q 付き GET、各フィルタ（needsReview/hasPlayed/黒本1 client/season/genre）適用、needs_review バナー件数＋ショートカット遷移。
+- 編集（`song-edit.test.tsx`）: 新規 POST（全属性・ジャンル複数）／既存 PATCH／needsReview 解除送信／**削除 409 でメッセージ表示**／「保存して次の未整備曲へ」遷移。
+- 設定（`settings.test.tsx`）: engine.* 値変更で PUT ボディ検証、「既定値に戻す」で seed 既定を PUT、楽器追加 POST、母店 Toggle PATCH、エクスポートDL 経路、ネスト葉マージ PUT。
+- ウィザード（`import-wizard.test.tsx`）: **全分岐** — アップロード201→エラー行表示→店舗区分確定→曲名解決(match/stub/skip・一括)→resolutions POST→dry-run 差分→commit(recalcHasPlayed)結果／破棄 DELETE／再開（sessionStorage）／PREVIEW以外409。
+- 対象基準: 1・2・3・4・5・6（全機能の自動テスト）。
+- 完了ゲート: `npm run lint` / `npm run typecheck` / `npm run test` が緑。
 
 ## リスクと緩和
-- **スライダーのモバイル操作性 / 中央起点 fill**: radix Range は中央起点で塗れない → ios-slider は value 算出の独立 fill を描画。5段階スナップ（step=1）+ タッチ領域拡大 + focus ring で誤タッチ低減。
-- **結果待ちの体感**: `submitting` state でボタン無効化（二重実行防止）+ 結果領域スケルトン。
-- **画面縦長化**: ジャンル上書きは折りたたみ既定、実行後は結果セクションへ自動スクロール。
-- **ルーティング二経路**: 記録画面ナビを `/sessions/[id]/recommend` に是正、`/suggest` タブは active session へ誘導/空状態化。
-- **季節ラベルのサーバ設定非公開**: season_months はサーバ設定でフロント非公開 → 既定の月境界でクライアント導出。境界変更が必要になれば followup（API に季節ラベルを含める）。
-- **保留枠の情報源**: 警告は条件依存のため `recommendation.pendingSongs`（再評価済み）を使用。GET /api/pending-songs は warnings を返さないため保留枠は推薦実行後の結果セクションで表示（候補0でも表示＝「常時」の意）。
-
-## 境界（本ユニットで作らないもの）
-- 推薦ロジック・理由文生成（unit-02/04）。曲追加シートは unit-05 の再利用（重複実装禁止）。設定画面は unit-07（ios-slider は共有として本ユニットで実装するが設定画面自体は対象外）。
+1. **再開の read API 欠如**（GET jobs 一覧/単体が unit-08 に無い）→ sessionStorage 永続で同一ブラウザ再開を実現。別端末再開は unit-08 followup（GET /api/import/jobs 追加）として明記。
+2. **ios-slider が engine.* に不適合**（-2..2 固定）→ 数値入力採用（ワイヤーフレームと整合）。スライダー要件は解消。
+3. **黒本1 フィルタの API パラメータ不在** → クライアント側 inKurobon1 フィルタ（数百件で軽量）。
+4. **ネスト JSON 設定の複雑さ** → settings-meta の親key＋path で葉編集・親オブジェクトへマージして PUT。非数値 season_months は読み取り専用。
+5. **multipart と apiFetch の Content-Type 競合** → FormData 検出で JSON ヘッダを付けない分岐＋専用 uploadImport。
+6. **設定20項目超で迷子**（spec Risk）→ グループ化＋説明＋既定値表示＋折りたたみ＋グループ単位リセット。
+7. **PC 1024px** → max-w-lg シェル維持＋overflow-x-auto＋lg+ フルブリード。criterion 7=崩れない を満たす。

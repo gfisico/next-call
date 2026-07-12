@@ -14,7 +14,7 @@ deployment:
   target: docker
   artifacts: []
   environments: [production]
-hat: planner
+hat: builder
 ---
 
 # unit-07-master-settings-screen
