@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wireframe: unit-05 セッション記録画面</title>
+<style>
+  /* === BASE（ローファイ・グレーボックス / design_rule.md のトーン準拠） === */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, sans-serif; background: #f5f5f5; color: #333; padding: 40px 20px; }
+  h1 { text-align: center; font-size: 18px; color: #666; margin-bottom: 8px; }
+  .subtitle { text-align: center; font-size: 13px; color: #999; margin-bottom: 40px; }
+  .section-label { text-align: center; font-size: 14px; font-weight: 600; color: #666; margin: 48px 0 20px; }
+
+  /* === LAYOUT === */
+  .flow { display: flex; gap: 28px; justify-content: center; align-items: flex-start; flex-wrap: wrap; }
+  .arrow { display: flex; align-items: center; font-size: 28px; color: #bbb; padding-top: 200px; }
+
+  /* === SCREEN CARDS（モバイル375px枠） === */
+  .screen { width: 375px; background: #fff; border: 2px solid #ddd; border-radius: 16px; overflow: hidden; }
+  .screen-header {
+    background: #e8e8e8; padding: 12px 16px; font-size: 11px; font-weight: 600;
+    color: #888; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #ddd;
+  }
+  .screen-body { padding: 16px; }
+  .screen-title { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+  .screen-desc { font-size: 13px; color: #888; margin-bottom: 16px; line-height: 1.4; }
+
+  /* === APP SHELL === */
+  .appbar { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid #e0e0e0; }
+  .appbar .title { font-size: 16px; font-weight: 700; }
+  .appbar .sub { font-size: 12px; color: #888; }
+  .appbar .menu { font-size: 20px; color: #888; padding: 0 4px; }
+  .bottomnav { display: flex; border-top: 1px solid #e0e0e0; background: #fafafa; }
+  .bottomnav div { flex: 1; text-align: center; padding: 10px 0 12px; font-size: 11px; color: #aaa; }
+  .bottomnav .active { color: #333; font-weight: 700; }
+  .fixedbar { border-top: 1px solid #e0e0e0; background: #fafafa; padding: 12px 16px; }
+  .fixedbar .hint { font-size: 10px; color: #aaa; text-align: center; margin-top: 6px; }
+
+  /* === FORM FIELDS === */
+  .field { border: 2px dashed #ccc; border-radius: 8px; padding: 12px 14px; margin-bottom: 12px; font-size: 14px; color: #aaa; min-height: 40px; }
+  .field.filled { border-style: solid; color: #333; }
+  .label { font-size: 13px; font-weight: 600; margin: 14px 0 6px; }
+  .help { font-size: 11px; color: #999; margin: -6px 0 12px; line-height: 1.4; }
+
+  /* === BUTTONS（h-10相当 / rounded-lg / Primaryは画面内1つ） === */
+  .btn { display: block; width: 100%; min-height: 40px; padding: 10px 16px; border-radius: 8px; border: none;
+    font-size: 15px; font-weight: 600; cursor: default; margin-bottom: 8px; text-align: center; }
+  .btn-primary { background: #52525b; color: #fff; }
+  .btn-secondary { background: #f0f0f0; color: #555; border: 1px solid #ddd; }
+  .btn-text { background: none; color: #666; font-size: 13px; min-height: auto; padding: 6px; }
+  .btn-destructive { background: #fef2f2; color: #b91c1c; border: 1px solid #fca5a5; }
+  .btn-row { display: flex; gap: 8px; } .btn-row .btn { margin-bottom: 0; }
+
+  /* === SEGMENT（セグメント選択） === */
+  .seg { display: flex; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; margin-bottom: 12px; }
+  .seg div { flex: 1; text-align: center; padding: 10px 4px; font-size: 13px; color: #888; border-right: 1px solid #ccc; }
+  .seg div:last-child { border-right: none; }
+  .seg .on { background: #e4e4e7; color: #333; font-weight: 700; }
+
+  /* === CHECKBOX === */
+  .check { display: flex; align-items: center; gap: 8px; font-size: 14px; padding: 8px 0; }
+  .check .box { width: 18px; height: 18px; border: 2px solid #bbb; border-radius: 4px; flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center; font-size: 12px; color: #444; }
+  .check .box.on { background: #e4e4e7; border-color: #888; }
+
+  /* === CHIPS（楽器コード等） === */
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .chip { border: 1px solid #ccc; border-radius: 999px; padding: 6px 12px; font-size: 12px; color: #777; background: #fff; }
+  .chip.on { background: #e4e4e7; border-color: #888; color: #333; font-weight: 700; }
+
+  /* === BADGES（rounded-full / 色+テキストで状態表示） === */
+  .badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 2px 8px; font-size: 10px; font-weight: 600; border: 1px solid; white-space: nowrap; }
+  .badge-neutral { background: #f4f4f5; color: #666; border-color: #ddd; }
+  .badge-info { background: rgba(14,165,233,0.08); color: #0369a1; border-color: rgba(14,165,233,0.25); }
+  .badge-warning { background: rgba(245,158,11,0.10); color: #b45309; border-color: rgba(245,158,11,0.25); }
+  .badge-success { background: rgba(16,185,129,0.08); color: #047857; border-color: rgba(16,185,129,0.25); }
+
+  /* === LIST/CARD ITEMS === */
+  .card { border: 1px solid #e0e0e0; border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; }
+  .row { display: flex; align-items: center; gap: 8px; }
+  .row .grow { flex: 1; min-width: 0; }
+  .song-title { font-size: 15px; font-weight: 600; }
+  .meta { font-size: 11px; color: #999; margin-top: 2px; }
+  .order-num { width: 22px; font-size: 13px; color: #aaa; text-align: right; flex-shrink: 0; }
+  .kebab { color: #aaa; font-size: 16px; padding: 0 2px; }
+
+  /* === TOGGLE === */
+  .toggle { display: inline-flex; border: 1px solid #ccc; border-radius: 999px; overflow: hidden; font-size: 12px; }
+  .toggle div { padding: 5px 12px; color: #999; }
+  .toggle .on { background: #e4e4e7; color: #333; font-weight: 700; }
+
+  /* === DIVIDER === */
+  .divider { text-align: center; font-size: 12px; color: #bbb; margin: 16px 0; position: relative; }
+  .divider::before, .divider::after { content: ''; position: absolute; top: 50%; width: 40%; height: 1px; background: #e0e0e0; }
+  .divider::before { left: 0; } .divider::after { right: 0; }
+
+  /* === FLOW NOTES（挙動説明の黄色コールアウト） === */
+  .note { background: #fffde7; border: 1px solid #fff176; border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #666; margin-top: 12px; line-height: 1.5; }
+  .note strong { color: #333; }
+
+  /* === COPY REVIEW（文言レビュー注記・オレンジ） === */
+  .copy-note { font-size: 11px; color: #e65100; font-style: italic; margin-top: 4px; }
+
+  /* === ERROR BLOCK === */
+  .error-block { background: #fef2f2; border: 1px solid #fca5a5; border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #b91c1c; margin: 12px 0; line-height: 1.5; }
+
+  /* === DIALOG === */
+  .dialog { background: #fff; border: 2px solid #ddd; border-radius: 16px; padding: 24px 20px; margin: 40px 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+  .dialog-backdrop { background: #f0f0f0; }
+</style>
+</head>
+<body>
+
+<h1>next-call — ジャズセッション向け選曲提案アプリ MVP</h1>
+<p class="subtitle">ワイヤーフレーム — unit-05: セッション記録画面（"/", "/sessions", "/sessions/[id]"）— AI-DLC Elaboration Artifact</p>
+
+<!-- ============================================================ -->
+<div class="section-label">フロー1: セッション開始（ホーム → 開始シート）</div>
+<div class="flow">
+
+  <!-- Screen 1: ホーム（ACTIVEセッションなし） -->
+  <div class="screen">
+    <div class="screen-header">Screen 1 — ホーム "/"（ACTIVEセッションなし）</div>
+    <div class="appbar">
+      <span class="title">next-call</span>
+      <span class="sub">2026-07-12</span>
+    </div>
+    <div class="screen-body">
+      <button class="btn btn-primary">セッションを開始</button>
+      <div class="label">直近のセッション</div>
+      <div class="card row">
+        <div class="grow">
+          <div class="song-title">Jazz Spot XYZ</div>
+          <div class="meta">2026-07-05 ・ 8曲</div>
+        </div>
+        <span class="badge badge-info">母店</span>
+        <span class="kebab">›</span>
+      </div>
+      <div class="card row">
+        <div class="grow">
+          <div class="song-title">Bar ABC</div>
+          <div class="meta">2026-06-28 ・ 5曲</div>
+        </div>
+        <span class="kebab">›</span>
+      </div>
+      <button class="btn btn-text">すべての履歴を見る →</button>
+      <div class="note"><strong>分岐:</strong> ACTIVEセッションが存在する場合、"/" はこの画面の代わりに Screen 4（セッション記録画面）を表示する。</div>
+    </div>
+    <div class="bottomnav">
+      <div class="active">セッション</div><div>推薦</div><div>マスター</div><div>設定</div>
+    </div>
+  </div>
+
+  <div class="arrow">→</div>
+
+  <!-- Screen 2: セッション開始シート（既存店舗選択） -->
+  <div class="screen">
+    <div class="screen-header">Screen 2 — セッション開始シート（既存店舗）</div>
+    <div class="screen-body dialog-backdrop" style="padding: 24px 8px 8px;">
+      <div style="background:#fff; border:1px solid #ddd; border-radius:16px 16px 12px 12px; padding:16px;">
+        <div class="screen-title" style="font-size:17px;">セッションを開始</div>
+        <div class="label">店舗を選択</div>
+        <div class="card row">
+          <div class="grow song-title">Jazz Spot XYZ</div>
+          <span class="badge badge-info">母店</span>
+        </div>
+        <div class="card row">
+          <div class="grow song-title">Bar ABC</div>
+        </div>
+        <div class="divider">または</div>
+        <div class="field">新しい店舗名を入力…</div>
+        <div class="label">リスナー客</div>
+        <div class="toggle"><div>あり</div><div class="on">なし</div></div>
+        <button class="btn btn-primary" style="margin-top:16px;">開始する</button>
+        <div class="note"><strong>挙動:</strong> 既存店舗は1タップで選択。既存店舗選択時は母店判定（Screen 3）を表示しない。開始で <strong>POST /api/sessions</strong> → Screen 4 へ。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow">→</div>
+
+  <!-- Screen 3: 新規店舗+母店判定 -->
+  <div class="screen">
+    <div class="screen-header">Screen 3 — 開始シート（新規店舗 + 母店判定）</div>
+    <div class="screen-body dialog-backdrop" style="padding: 24px 8px 8px;">
+      <div style="background:#fff; border:1px solid #ddd; border-radius:16px 16px 12px 12px; padding:16px;">
+        <div class="screen-title" style="font-size:17px;">セッションを開始</div>
+        <div class="label">新しい店舗名</div>
+        <div class="field filled">Jazz Bar 新宿</div>
+        <div class="label">この店舗はいつも通っている母店ですか？</div>
+        <div class="seg"><div>はい（母店）</div><div class="on">いいえ</div></div>
+        <div class="help">この設定はあとから「設定 &gt; 母店設定」で変更できます。</div>
+        <div class="copy-note">^ Copy: 「母店」の言い回しは要プロダクトレビュー</div>
+        <div class="label">リスナー客</div>
+        <div class="toggle"><div class="on">あり</div><div>なし</div></div>
+        <button class="btn btn-primary" style="margin-top:16px;">この店舗で開始する</button>
+        <div class="note"><strong>仕様§4.2:</strong> 母店判定は<strong>新規店舗の初回登録時に一度だけ</strong>表示し、以後は表示しない（保存済みの is_home を自動参照）。</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================================================ -->
+<div class="section-label">フロー2: セッション記録（主画面）と曲追加</div>
+<div class="flow">
+
+  <!-- Screen 4: セッション記録画面 -->
+  <div class="screen">
+    <div class="screen-header">Screen 4 — セッション記録画面（ACTIVE時の "/"）</div>
+    <div class="appbar">
+      <div>
+        <div class="title">Jazz Spot XYZ <span class="badge badge-info">母店</span></div>
+        <div class="sub">2026-07-12</div>
+      </div>
+      <span class="menu">⋯</span>
+    </div>
+    <div class="screen-body">
+      <div class="row" style="justify-content: space-between; margin-bottom: 12px;">
+        <span style="font-size:13px; font-weight:600;">リスナー客</span>
+        <div class="toggle"><div class="on">あり</div><div>なし</div></div>
+      </div>
+      <div class="label">セットリスト（3曲）</div>
+      <div class="card">
+        <div class="row">
+          <span class="order-num">1.</span>
+          <div class="grow">
+            <div class="song-title">Stella By Starlight</div>
+            <div class="meta">フロント: vo → as → as → ts</div>
+          </div>
+          <span class="kebab">⋯</span>
+        </div>
+        <div class="row" style="margin-top:6px; padding-left:30px; gap:4px; flex-wrap:wrap;">
+          <span class="badge badge-neutral">SAX</span>
+          <span class="badge badge-success">コール</span>
+          <span class="badge badge-warning">譜面なし</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="row">
+          <span class="order-num">2.</span>
+          <div class="grow"><div class="song-title">Alone Together</div></div>
+          <span class="kebab">⋯</span>
+        </div>
+        <div class="row" style="margin-top:6px; padding-left:30px;">
+          <span class="badge badge-neutral">不参加</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="row">
+          <span class="order-num">3.</span>
+          <div class="grow"><div class="song-title">Blue Bossa</div></div>
+          <span class="kebab">⋯</span>
+        </div>
+        <div class="row" style="margin-top:6px; padding-left:30px;">
+          <span class="badge badge-neutral">PIANO</span>
+        </div>
+      </div>
+      <button class="btn btn-secondary">＋ 曲を追加</button>
+      <div class="note"><strong>挙動:</strong> 行タップで編集シート（Screen 5 と同構成・値入り）。[⋯] メニューから削除（確認あり）。リスナー客トグルは変更時に即 <strong>PATCH</strong>。ヘッダー [⋯] メニューに「セッションを終了」（Screen 7）。</div>
+    </div>
+    <div class="fixedbar">
+      <button class="btn btn-primary" style="margin-bottom:0;">次の曲を考える</button>
+      <div class="hint">画面下部固定 ・ unit-06 選曲支援画面へ遷移（未完成時はプレースホルダー）</div>
+    </div>
+    <div class="bottomnav">
+      <div class="active">セッション</div><div>推薦</div><div>マスター</div><div>設定</div>
+    </div>
+  </div>
+
+  <div class="arrow">→</div>
+
+  <!-- Screen 5: 曲追加シート -->
+  <div class="screen">
+    <div class="screen-header">Screen 5 — 曲追加シート（既存曲・フロント編成展開）</div>
+    <div class="screen-body dialog-backdrop" style="padding: 16px 8px 8px;">
+      <div style="background:#fff; border:1px solid #ddd; border-radius:16px 16px 12px 12px; padding:16px;">
+        <div class="screen-title" style="font-size:17px;">曲を追加</div>
+        <div class="label">曲名</div>
+        <div class="field filled">stella|</div>
+        <div class="card row" style="border-style:solid; background:#f4f4f5;">
+          <div class="grow song-title">Stella By Starlight <span style="font-weight:400; font-size:11px; color:#999;">key: B♭ ・ AABA</span></div>
+          <span class="badge badge-success">選択中</span>
+        </div>
+        <div class="help">インクリメンタル検索（title部分一致・debounce 250ms）。候補タップで選択。</div>
+        <div class="label">自分の参加</div>
+        <div class="seg"><div>不参加</div><div class="on">サックス</div><div>ピアノ</div></div>
+        <div class="help">既定=サックス。必須入力は曲名のみ（他は既定値のまま保存可）。</div>
+        <div class="check"><span class="box on">✓</span> 自分がコールした</div>
+        <div class="check"><span class="box"></span> 譜面なしだった</div>
+        <div class="label">フロント編成（任意・折りたたみ既定 ▾ 展開中）</div>
+        <div class="help">選択済み（追加順 = position。タップで削除）:</div>
+        <div class="chips">
+          <span class="chip on">1. vo ✕</span><span class="chip on">2. as ✕</span><span class="chip on">3. as ✕</span><span class="chip on">4. ts ✕</span>
+        </div>
+        <div class="help">楽器コードをタップで順に追加（同一楽器の複数追加可）:</div>
+        <div class="chips">
+          <span class="chip">vo</span><span class="chip">ss</span><span class="chip">as</span><span class="chip">ts</span><span class="chip">bs</span><span class="chip">tp</span><span class="chip">fl</span><span class="chip">fh</span><span class="chip">harm</span><span class="chip">tb</span><span class="chip">cl</span><span class="chip">g</span>
+        </div>
+        <div class="label">メモ（任意）</div>
+        <div class="field">例: テンポ速め、2管でハモった…</div>
+        <div class="btn-row">
+          <button class="btn btn-secondary">保存して次へ</button>
+          <button class="btn btn-primary">保存</button>
+        </div>
+        <div class="note"><strong>挙動:</strong> 保存で <strong>POST /api/sessions/:id/performances</strong>。「保存して次へ」はシートを閉じずフォームをリセットし連続追加。二重送信防止（送信中はボタン無効化）。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow">→</div>
+
+  <!-- Screen 6: ヒットなし→クイック登録 + エラー -->
+  <div class="screen">
+    <div class="screen-header">Screen 6 — 曲追加シート（ヒットなし → クイック登録 / 送信失敗）</div>
+    <div class="screen-body dialog-backdrop" style="padding: 16px 8px 8px;">
+      <div style="background:#fff; border:1px solid #ddd; border-radius:16px 16px 12px 12px; padding:16px;">
+        <div class="screen-title" style="font-size:17px;">曲を追加</div>
+        <div class="label">曲名</div>
+        <div class="field filled">Confirmation|</div>
+        <div class="help" style="color:#b45309;">一致する曲が見つかりません</div>
+        <button class="btn btn-secondary">「Confirmation」を新規登録</button>
+        <div class="help">クイック登録: 曲名のみで曲マスターに作成（<span class="badge badge-warning" style="font-size:9px;">属性未整備</span> 扱い）。あとで「マスター」画面から属性を整備できます。</div>
+        <div class="copy-note">^ Copy: 「あとでマスターを整備」ヒント文言は要プロダクトレビュー</div>
+        <div class="label">自分の参加</div>
+        <div class="seg"><div>不参加</div><div class="on">サックス</div><div>ピアノ</div></div>
+        <div class="check"><span class="box"></span> 自分がコールした</div>
+        <div class="check"><span class="box"></span> 譜面なしだった</div>
+        <div class="error-block">
+          <strong>保存に失敗しました（通信エラー）</strong><br>
+          入力内容は保持されています。電波の良い場所でもう一度お試しください。
+          <button class="btn btn-secondary" style="margin-top:8px;">リトライ</button>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-secondary">キャンセル</button>
+          <button class="btn btn-primary">保存</button>
+        </div>
+        <div class="note"><strong>オフライン耐性:</strong> POST失敗時も入力値を消さない。リトライで同一内容を再送。クイック登録→そのまま演奏記録として追加まで一連で行える。</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================================================ -->
+<div class="section-label">フロー3: セッション終了・履歴</div>
+<div class="flow">
+
+  <!-- Screen 7: 終了確認 -->
+  <div class="screen">
+    <div class="screen-header">Screen 7 — セッション終了 確認ダイアログ</div>
+    <div class="screen-body dialog-backdrop" style="min-height: 320px;">
+      <div class="dialog">
+        <div class="screen-title" style="font-size:17px;">セッションを終了しますか？</div>
+        <div class="screen-desc" style="margin-bottom:20px;">終了後は履歴に移動します。演奏記録はあとから修正できます。</div>
+        <div class="btn-row">
+          <button class="btn btn-secondary">キャンセル</button>
+          <button class="btn btn-primary">終了する</button>
+        </div>
+      </div>
+      <div class="note" style="margin: 0 16px;"><strong>挙動:</strong> ヘッダーメニューから起動。終了は破壊的操作ではないため <strong>Destructive スタイルを使わない</strong>（通常ボタン）。終了後 status=ENDED → 履歴詳細（Screen 9）へ。</div>
+    </div>
+  </div>
+
+  <div class="arrow">→</div>
+
+  <!-- Screen 8: 履歴一覧 -->
+  <div class="screen">
+    <div class="screen-header">Screen 8 — 履歴 "/sessions"</div>
+    <div class="appbar"><span class="title">セッション履歴</span></div>
+    <div class="screen-body">
+      <div class="card row">
+        <div class="grow">
+          <div class="song-title">2026-07-12 ・ Jazz Spot XYZ</div>
+          <div class="meta">8曲 ・ リスナー客あり</div>
+        </div>
+        <span class="badge badge-info">母店</span>
+        <span class="kebab">›</span>
+      </div>
+      <div class="card row">
+        <div class="grow">
+          <div class="song-title">2026-07-05 ・ Jazz Spot XYZ</div>
+          <div class="meta">8曲</div>
+        </div>
+        <span class="badge badge-info">母店</span>
+        <span class="kebab">›</span>
+      </div>
+      <div class="card row">
+        <div class="grow">
+          <div class="song-title">2026-06-28 ・ Bar ABC</div>
+          <div class="meta">5曲</div>
+        </div>
+        <span class="kebab">›</span>
+      </div>
+      <div class="note"><strong>挙動:</strong> 新しい順。行タップで詳細（Screen 9）へ。</div>
+    </div>
+    <div class="bottomnav">
+      <div class="active">セッション</div><div>推薦</div><div>マスター</div><div>設定</div>
+    </div>
+  </div>
+
+  <div class="arrow">→</div>
+
+  <!-- Screen 9: 履歴詳細 -->
+  <div class="screen">
+    <div class="screen-header">Screen 9 — 履歴詳細 "/sessions/[id]"（終了済み）</div>
+    <div class="appbar">
+      <div>
+        <div class="title">‹ Jazz Spot XYZ <span class="badge badge-info">母店</span></div>
+        <div class="sub">2026-07-05 ・ 終了済み ・ リスナー客あり</div>
+      </div>
+    </div>
+    <div class="screen-body">
+      <div class="label">セットリスト（8曲）</div>
+      <div class="card">
+        <div class="row">
+          <span class="order-num">1.</span>
+          <div class="grow"><div class="song-title">All The Things You Are</div></div>
+          <span class="kebab">⋯</span>
+        </div>
+        <div class="row" style="margin-top:6px; padding-left:30px; gap:4px;">
+          <span class="badge badge-neutral">SAX</span>
+          <span class="badge badge-success">コール</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="row">
+          <span class="order-num">2.</span>
+          <div class="grow"><div class="song-title">There Will Never Be Another You</div></div>
+          <span class="kebab">⋯</span>
+        </div>
+        <div class="row" style="margin-top:6px; padding-left:30px;">
+          <span class="badge badge-neutral">不参加</span>
+        </div>
+      </div>
+      <div style="border:2px dashed #ddd; border-radius:12px; height:120px; display:flex; align-items:center; justify-content:center; color:#bbb; font-size:12px; margin-bottom:8px;">…（残り6曲）</div>
+      <div class="note"><strong>挙動:</strong> 読み取り中心。ただし [⋯] から終了済みセッションの演奏記録も修正可能（曲追加シートと同フォームを再利用）。「曲を追加」「次の曲を考える」ボタンは終了済みでは表示しない。</div>
+    </div>
+    <div class="bottomnav">
+      <div class="active">セッション</div><div>推薦</div><div>マスター</div><div>設定</div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

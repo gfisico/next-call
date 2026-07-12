@@ -1,0 +1,118 @@
+name: deploy
+
+# main への push で 品質ゲート → イメージビルド/push → VPS デプロイ を連鎖させる。
+# deploy ジョブは vars.DEPLOY_ENABLED == 'true' のときのみ実行する。
+# 未設定（フォーク・Secrets 未整備）では quality と image のみ通り、CI は赤くならない。
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: deploy-main
+  cancel-in-progress: false
+
+env:
+  # GHCR のイメージ名（owner は小文字化して image ジョブで確定する）。
+  IMAGE_NAME: next-call
+
+jobs:
+  quality:
+    name: quality (typecheck / lint / test / build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run test
+      - run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+
+  image:
+    name: build & push image (GHCR)
+    needs: quality
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_sha: ${{ steps.meta.outputs.image_sha }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute lowercase image ref
+        id: meta
+        run: |
+          OWNER_LC="$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
+          echo "image=ghcr.io/${OWNER_LC}/${IMAGE_NAME}" >> "$GITHUB_OUTPUT"
+          echo "image_sha=ghcr.io/${OWNER_LC}/${IMAGE_NAME}:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.image }}:latest
+            ${{ steps.meta.outputs.image }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: deploy to VPS
+    needs: image
+    runs-on: ubuntu-latest
+    # Secrets/vars 未設定時はスキップ（有効な GitHub Actions 式）。
+    if: ${{ vars.DEPLOY_ENABLED == 'true' }}
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          # 直近 SHA を明示ピンして pull/up。ロールバックの起点を一意にする。
+          envs: DEPLOY_IMAGE
+          script_stop: true
+          script: |
+            set -e
+            cd /srv/next-call
+            export APP_IMAGE="$DEPLOY_IMAGE"
+            echo "[deploy] pulling $APP_IMAGE"
+            docker compose pull app
+            docker compose up -d
+            # .env から公開ドメインを取得してヘルスチェック（最大 60 秒リトライ）。
+            APP_DOMAIN="$(grep -E '^APP_DOMAIN=' .env | cut -d= -f2-)"
+            HEALTH_URL="https://${APP_DOMAIN}/api/health"
+            echo "[deploy] health check: $HEALTH_URL"
+            ok=0
+            for i in $(seq 1 30); do
+              code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "$HEALTH_URL" || true)"
+              if [ "$code" = "200" ]; then ok=1; echo "[deploy] healthy after ${i} attempt(s)"; break; fi
+              echo "[deploy] attempt ${i}: HTTP ${code} — retrying in 2s"
+              sleep 2
+            done
+            if [ "$ok" != "1" ]; then
+              echo "[deploy] health check FAILED after 60s"
+              docker compose logs --tail=100 app
+              exit 1
+            fi
+            # 未使用の旧イメージを掃除（直前タグはロールバック用に残す）。
+            docker image prune -f
+        env:
+          DEPLOY_IMAGE: ${{ needs.image.outputs.image_sha }}

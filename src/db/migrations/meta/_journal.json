@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1783850777738,
+      "tag": "0000_supreme_gamma_corps",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1783863271335,
+      "tag": "0001_careful_daredevil",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1783877025586,
+      "tag": "0002_aberrant_senator_kelly",
+      "breakpoints": true
+    }
+  ]
+}

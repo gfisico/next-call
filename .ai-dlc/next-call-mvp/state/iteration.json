@@ -1,0 +1,14 @@
+{
+  "iteration": 26,
+  "hat": "integrator",
+  "workflowName": "default",
+  "workflow": [
+    "planner",
+    "builder",
+    "reviewer"
+  ],
+  "status": "completed",
+  "targetUnit": "",
+  "currentUnit": "unit-09-infra-deploy",
+  "integratorComplete": true
+}

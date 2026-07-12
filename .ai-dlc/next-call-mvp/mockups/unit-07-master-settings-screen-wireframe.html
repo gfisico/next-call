@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wireframe: unit-07 曲マスター・設定・インポート画面</title>
+<style>
+  /* === BASE（ローファイ・グレーボックス / design_rule.md のトーン準拠） === */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, sans-serif; background: #f5f5f5; color: #333; padding: 40px 20px; }
+  h1 { text-align: center; font-size: 18px; color: #666; margin-bottom: 8px; }
+  .subtitle { text-align: center; font-size: 13px; color: #999; margin-bottom: 40px; }
+  .section-label { text-align: center; font-size: 14px; font-weight: 600; color: #666; margin: 48px 0 20px; }
+
+  /* === LAYOUT === */
+  .flow { display: flex; gap: 28px; justify-content: center; align-items: flex-start; flex-wrap: wrap; }
+  .arrow { display: flex; align-items: center; font-size: 28px; color: #bbb; padding-top: 200px; }
+
+  /* === SCREEN CARDS === */
+  .screen { width: 375px; background: #fff; border: 2px solid #ddd; border-radius: 16px; overflow: hidden; }
+  .screen.wide { width: 1024px; max-width: 100%; }
+  .screen-header {
+    background: #e8e8e8; padding: 12px 16px; font-size: 11px; font-weight: 600;
+    color: #888; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #ddd;
+  }
+  .screen-body { padding: 16px; }
+  .screen-title { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+
+  /* === APP SHELL === */
+  .appbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid #e0e0e0; }
+  .appbar .title { font-size: 16px; font-weight: 700; }
+  .appbar .sub { font-size: 12px; color: #888; }
+  .bottomnav { display: flex; border-top: 1px solid #e0e0e0; background: #fafafa; }
+  .bottomnav div { flex: 1; text-align: center; padding: 10px 0 12px; font-size: 11px; color: #aaa; }
+  .bottomnav .active { color: #333; font-weight: 700; }
+
+  /* === HEADINGS / FIELDS === */
+  .label { font-size: 13px; font-weight: 700; margin: 16px 0 8px; }
+  .label:first-child { margin-top: 0; }
+  .sub-label { font-size: 12px; font-weight: 600; color: #666; margin: 10px 0 4px; }
+  .help { font-size: 11px; color: #999; margin-bottom: 10px; line-height: 1.4; }
+  .field { border: 2px dashed #ccc; border-radius: 8px; padding: 12px 14px; margin-bottom: 12px; font-size: 14px; color: #aaa; min-height: 40px; }
+  .field.filled { border-style: solid; color: #333; }
+  .field.sm { min-height: 34px; padding: 7px 10px; font-size: 13px; margin-bottom: 0; width: 90px; display: inline-block; text-align: right; }
+
+  /* === BUTTONS === */
+  .btn { display: block; width: 100%; min-height: 40px; padding: 10px 16px; border-radius: 8px; border: none;
+    font-size: 15px; font-weight: 600; cursor: default; margin-bottom: 8px; text-align: center; }
+  .btn-primary { background: #52525b; color: #fff; }
+  .btn-secondary { background: #f0f0f0; color: #555; border: 1px solid #ddd; }
+  .btn-destructive { background: #fef2f2; color: #b91c1c; border: 1px solid #fca5a5; }
+  .btn-sm { min-height: 32px; padding: 6px 12px; font-size: 12px; width: auto; display: inline-block; margin: 0; }
+  .btn-text { background: none; color: #666; font-size: 13px; min-height: auto; padding: 6px; }
+  .btn-row { display: flex; gap: 8px; } .btn-row .btn { margin-bottom: 0; }
+
+  /* === SEGMENT / CHECK / CHIPS === */
+  .seg { display: flex; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; margin-bottom: 10px; }
+  .seg div { flex: 1; text-align: center; padding: 10px 4px; font-size: 12px; color: #888; border-right: 1px solid #ccc; }
+  .seg div:last-child { border-right: none; }
+  .seg .on { background: #e4e4e7; color: #333; font-weight: 700; }
+  .seg.sm div { padding: 6px 4px; font-size: 11px; }
+  .check { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 6px 0; }
+  .check .box { width: 18px; height: 18px; border: 2px solid #bbb; border-radius: 4px; flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center; font-size: 12px; color: #444; }
+  .check .box.on { background: #e4e4e7; border-color: #888; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .chip { border: 1px solid #ccc; border-radius: 999px; padding: 6px 12px; font-size: 12px; color: #777; background: #fff; white-space: nowrap; }
+  .chip.on { background: #e4e4e7; border-color: #888; color: #333; font-weight: 700; }
+
+  /* === BADGES === */
+  .badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 2px 8px; font-size: 10px; font-weight: 600; border: 1px solid; white-space: nowrap; }
+  .badge-neutral { background: #f4f4f5; color: #666; border-color: #ddd; }
+  .badge-info { background: rgba(14,165,233,0.08); color: #0369a1; border-color: rgba(14,165,233,0.25); }
+  .badge-warning { background: rgba(245,158,11,0.10); color: #b45309; border-color: rgba(245,158,11,0.25); }
+  .badge-success { background: rgba(16,185,129,0.08); color: #047857; border-color: rgba(16,185,129,0.25); }
+  .badge-danger { background: rgba(239,68,68,0.08); color: #b91c1c; border-color: rgba(239,68,68,0.25); }
+
+  /* === CARDS / ROWS === */
+  .card { border: 1px solid #e0e0e0; border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; }
+  .row { display: flex; align-items: center; gap: 8px; }
+  .row .grow { flex: 1; min-width: 0; }
+  .song-title { font-size: 15px; font-weight: 600; }
+  .meta { font-size: 11px; color: #999; margin-top: 2px; }
+  .kebab { color: #aaa; font-size: 16px; }
+
+  /* === WARNING SHORTCUT BANNER === */
+  .warn-banner { background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.3); border-radius: 8px; padding: 10px 12px; font-size: 13px; color: #b45309; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+
+  /* === TABLE（overflow-x-auto / design_rule §6.5） === */
+  .table-wrap { overflow-x: auto; border: 1px solid #e0e0e0; border-radius: 12px; margin-bottom: 12px; }
+  table { min-width: 100%; border-collapse: collapse; font-size: 12px; }
+  thead { background: #f4f4f5; }
+  th { padding: 10px 12px; text-align: left; font-weight: 600; color: #888; white-space: nowrap; }
+  td { padding: 10px 12px; border-top: 1px solid #eee; vertical-align: top; }
+
+  /* === WIZARD STEPS === */
+  .steps { display: flex; gap: 4px; margin-bottom: 14px; }
+  .steps div { flex: 1; text-align: center; font-size: 10px; color: #aaa; padding: 6px 2px; border-bottom: 3px solid #e0e0e0; }
+  .steps .on { color: #333; font-weight: 700; border-bottom-color: #52525b; }
+  .steps .done { color: #047857; border-bottom-color: #a7f3d0; }
+
+  /* === TOGGLE === */
+  .toggle { display: inline-flex; border: 1px solid #ccc; border-radius: 999px; overflow: hidden; font-size: 11px; }
+  .toggle div { padding: 4px 10px; color: #999; }
+  .toggle .on { background: #e4e4e7; color: #333; font-weight: 700; }
+
+  /* === SETTINGS ROW === */
+  .setting-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+  .setting-row .name { font-size: 13px; font-weight: 600; }
+  .setting-row .desc { font-size: 10px; color: #999; margin-top: 2px; line-height: 1.4; }
+
+  /* === NOTES === */
+  .note { background: #fffde7; border: 1px solid #fff176; border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #666; margin-top: 12px; line-height: 1.5; }
+  .note strong { color: #333; }
+  .copy-note { font-size: 11px; color: #e65100; font-style: italic; margin-top: 4px; }
+  .error-block { background: #fef2f2; border: 1px solid #fca5a5; border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #b91c1c; margin: 8px 0; line-height: 1.5; }
+  .toast { background: #333; color: #fff; border-radius: 999px; padding: 8px 16px; font-size: 12px; display: inline-block; }
+  .divider-strong { border-top: 2px solid #e8e8e8; margin: 16px -16px; }
+  .collapse { border: 1px solid #e0e0e0; border-radius: 8px; padding: 10px 12px; font-size: 13px; color: #777; margin-bottom: 10px; display: flex; justify-content: space-between; }
+</style>
+</head>
+<body>
+
+<h1>next-call — ジャズセッション向け選曲提案アプリ MVP</h1>
+<p class="subtitle">ワイヤーフレーム — unit-07: 曲マスター・設定・インポート画面（"/songs", "/songs/[id]", "/settings", "/settings/import"）— AI-DLC Elaboration Artifact</p>
+
+<!-- ============================================================ -->
+<div class="section-label">フロー1: 曲マスター（一覧 → 編集）</div>
+<div class="flow">
+
+  <!-- Screen 1: 曲マスター一覧 -->
+  <div class="screen">
+    <div class="screen-header">Screen 1 — 曲マスター一覧 "/songs"</div>
+    <div class="appbar">
+      <span class="title">曲マスター <span style="font-weight:400; color:#999; font-size:13px;">(312)</span></span>
+      <button class="btn btn-secondary btn-sm">＋ 新規追加</button>
+    </div>
+    <div class="screen-body">
+      <div class="warn-banner">
+        <span><strong>属性未整備 12曲</strong> — クイック登録された曲</span>
+        <button class="btn btn-secondary btn-sm">補完する →</button>
+      </div>
+      <div class="field">曲名で検索…（部分一致・debounce）</div>
+      <div class="chips">
+        <span class="chip on">属性未整備</span><span class="chip">コール可能</span><span class="chip">黒本1</span><span class="chip">季節 ▾</span><span class="chip">ジャンル ▾</span>
+      </div>
+      <div class="card">
+        <div class="row">
+          <div class="grow">
+            <div class="song-title">Alone Together</div>
+            <div class="meta"><span class="badge badge-neutral">key: F</span> <span class="badge badge-neutral">AABA</span> <span class="badge badge-neutral">黒本1</span></div>
+          </div>
+          <span class="kebab">›</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="row">
+          <div class="grow">
+            <div class="song-title">Blue Bossa</div>
+            <div class="meta"><span class="badge badge-neutral">key: C</span> <span class="badge badge-neutral">その他</span> <span class="badge badge-info">ボサノバ</span></div>
+          </div>
+          <span class="kebab">›</span>
+        </div>
+      </div>
+      <div class="card" style="border-color: rgba(245,158,11,0.4);">
+        <div class="row">
+          <div class="grow">
+            <div class="song-title">Confirmation</div>
+            <div class="meta"><span class="badge badge-warning">属性未整備</span></div>
+          </div>
+          <span class="kebab">›</span>
+        </div>
+      </div>
+      <div class="note"><strong>挙動:</strong> フィルタチップは複数同時適用（AND）。「補完する→」は needs_review フィルタを適用した一覧へのショートカット（一覧から編集へ1タップ）。行タップで編集（Screen 2）へ。</div>
+    </div>
+    <div class="bottomnav">
+      <div>セッション</div><div>推薦</div><div class="active">マスター</div><div>設定</div>
+    </div>
+  </div>
+
+  <div class="arrow">→</div>
+
+  <!-- Screen 2: 曲編集 -->
+  <div class="screen">
+    <div class="screen-header">Screen 2 — 曲編集 "/songs/[id]"（新規は /songs/new）</div>
+    <div class="appbar">
+      <div>
+        <div class="title">‹ 曲を編集</div>
+        <div class="sub">Confirmation <span class="badge badge-warning">属性未整備</span></div>
+      </div>
+    </div>
+    <div class="screen-body">
+      <div class="sub-label">曲名（必須）</div>
+      <div class="field filled">Confirmation</div>
+      <div class="row" style="align-items:flex-start; gap:12px;">
+        <div style="flex:1;">
+          <div class="sub-label">黒本キー</div>
+          <div class="field filled">F</div>
+        </div>
+        <div style="flex:1;">
+          <div class="sub-label">作曲者</div>
+          <div class="field filled">C. Parker</div>
+        </div>
+      </div>
+      <div class="sub-label">構成</div>
+      <div class="seg sm"><div class="on">AABA</div><div>ABAC</div><div>12小節ブルース</div><div>その他</div></div>
+      <div class="check"><span class="box on">✓</span> 演奏経験あり（コール可能）</div>
+      <div class="check"><span class="box"></span> 譜面なし対応可</div>
+      <div class="check"><span class="box on">✓</span> 超定番</div>
+      <div class="check"><span class="box"></span> 構成が単純</div>
+      <div class="check"><span class="box on">✓</span> 黒本1曲載</div>
+      <div class="sub-label">季節</div>
+      <div class="seg sm"><div>春</div><div>夏</div><div>秋</div><div>冬</div><div class="on">通年</div></div>
+      <div class="sub-label">リスナー受け度</div>
+      <div class="seg sm"><div>1</div><div>2</div><div class="on">3</div><div>4</div><div>5</div></div>
+      <div class="sub-label">盛り上がり度</div>
+      <div class="seg sm"><div>1</div><div>2</div><div>3</div><div class="on">4</div><div>5</div></div>
+      <div class="sub-label">ジャンルタグ（複数選択可）</div>
+      <div class="chips">
+        <span class="chip">バラード</span><span class="chip">ボサノバ</span><span class="chip">3拍子</span><span class="chip">モード</span><span class="chip">ファンク</span><span class="chip on">ブルース</span><span class="chip">歌もの</span><span class="chip">循環</span><span class="chip">キメが多い曲</span>
+      </div>
+      <div class="sub-label">メモ</div>
+      <div class="field">任意メモ…</div>
+      <div class="check"><span class="box on">✓</span> 属性の入力が完了しましたか？（保存時に「属性未整備」を解除）</div>
+      <div class="copy-note">^ Copy: needs_review 解除の確認文言は要プロダクトレビュー</div>
+      <button class="btn btn-primary">保存</button>
+      <button class="btn btn-secondary">保存して次の未整備曲へ</button>
+      <button class="btn btn-destructive">この曲を削除</button>
+      <div class="error-block"><strong>削除できません:</strong> この曲には演奏履歴があるため削除できません。（API 409 応答時に表示）</div>
+      <div class="note"><strong>挙動:</strong> 削除は Destructive スタイル+確認ダイアログ。「保存して次の未整備曲へ」で needs_review 補完を連続作業できる。</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================================================ -->
+<div class="section-label">フロー2: 設定 "/settings"</div>
+<div class="flow">
+
+  <!-- Screen 3: 設定（エンジン設定） -->
+  <div class="screen">
+    <div class="screen-header">Screen 3 — 設定（エンジン設定グループ）</div>
+    <div class="appbar"><span class="title">設定</span></div>
+    <div class="screen-body">
+      <div class="label">エンジン設定</div>
+      <div class="help">推薦エンジンの挙動を調整します。変更は次回の推薦から反映されます。</div>
+
+      <div class="sub-label" style="color:#333; font-size:13px;">■ 除外・減点</div>
+      <div class="setting-row">
+        <div class="grow">
+          <div class="name">集計期間（日）</div>
+          <div class="desc">演奏頻度の集計に使う期間。既定: 730</div>
+        </div>
+        <div class="field sm filled">730</div>
+      </div>
+      <div class="setting-row">
+        <div class="grow">
+          <div class="name">同一キー減点</div>
+          <div class="desc">直前の曲と同じキーの場合の減点。既定: 15</div>
+        </div>
+        <div class="field sm filled">15</div>
+      </div>
+      <button class="btn btn-text" style="text-align:left; padding-left:0;">既定値に戻す</button>
+
+      <div class="sub-label" style="color:#333; font-size:13px;">■ 意図の重み</div>
+      <div class="setting-row">
+        <div class="grow">
+          <div class="name">珍しい曲の重み</div>
+          <div class="desc">スライダー1段階あたりの加減点。既定: 10</div>
+        </div>
+        <div class="field sm filled">10</div>
+      </div>
+      <div class="collapse"><span>■ 繰り返し減点（4項目）</span><span>▸</span></div>
+      <div class="collapse"><span>■ 抽選（乱数温度 tau ほか 3項目）</span><span>▸</span></div>
+      <div class="collapse"><span>■ 候補数（2項目）</span><span>▸</span></div>
+      <div style="text-align:center; margin-top:8px;"><span class="toast">保存しました（次回の推薦から有効）</span></div>
+      <div class="note"><strong>挙動:</strong> 設定キーは discovery.md「Provisional Values」の表を日本語説明付きでグループ表示（除外・減点／意図の重み／繰り返し減点／抽選／候補数）。各項目は数値入力またはスライダー+説明文+「既定値に戻す」。変更は <strong>PUT /api/settings で即時保存</strong>しトースト表示。範囲外値は入力UIの min/max + APIのzodで防止。項目数が多いためグループは折りたたみ可。</div>
+    </div>
+    <div class="bottomnav">
+      <div>セッション</div><div>推薦</div><div>マスター</div><div class="active">設定</div>
+    </div>
+  </div>
+
+  <div class="arrow">→</div>
+
+  <!-- Screen 4: 設定（マスター・データ管理） -->
+  <div class="screen">
+    <div class="screen-header">Screen 4 — 設定（楽器・母店・データ管理）</div>
+    <div class="appbar"><span class="title">設定</span></div>
+    <div class="screen-body">
+      <div class="label">楽器マスター</div>
+      <div class="chips">
+        <span class="chip on">vo</span><span class="chip on">ss</span><span class="chip on">as</span><span class="chip on">ts</span><span class="chip on">bs</span><span class="chip on">tp</span><span class="chip on">fl</span><span class="chip on">fh</span><span class="chip on">harm</span><span class="chip on">tb</span><span class="chip on">cl</span><span class="chip on">g</span>
+      </div>
+      <div class="row" style="gap:8px; margin-bottom:8px;">
+        <div class="field" style="flex:1; margin:0;">コード（例: vib）</div>
+        <div class="field" style="flex:1.4; margin:0;">表示名（例: ヴィブラフォン）</div>
+      </div>
+      <button class="btn btn-secondary">楽器を追加</button>
+
+      <div class="label">母店設定</div>
+      <div class="help">店舗の母店区分を修正できます（開始時の判定の訂正手段）。</div>
+      <div class="card row">
+        <div class="grow song-title" style="font-size:14px;">Jazz Spot XYZ</div>
+        <div class="toggle"><div class="on">母店</div><div>母店以外</div></div>
+      </div>
+      <div class="card row">
+        <div class="grow song-title" style="font-size:14px;">Bar ABC</div>
+        <div class="toggle"><div>母店</div><div class="on">母店以外</div></div>
+      </div>
+
+      <div class="label">データ管理</div>
+      <button class="btn btn-secondary">全データをエクスポート（ダウンロード）</button>
+      <button class="btn btn-secondary">CSVインポート →</button>
+      <div class="note"><strong>挙動:</strong> エクスポートは GET /api/export をファイルダウンロード。「CSVインポート →」で "/settings/import"（フロー3）へ。この画面に Primary ボタンは置かない（エンジン設定の保存が主アクション）。</div>
+    </div>
+    <div class="bottomnav">
+      <div>セッション</div><div>推薦</div><div>マスター</div><div class="active">設定</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================================================ -->
+<div class="section-label">フロー3: CSVインポートウィザード "/settings/import"（4段階）</div>
+<div class="flow">
+
+  <!-- Screen 5: Step1 -->
+  <div class="screen">
+    <div class="screen-header">Screen 5 — Step 1: アップロード</div>
+    <div class="appbar"><span class="title">‹ CSVインポート</span></div>
+    <div class="screen-body">
+      <div class="steps">
+        <div class="on">1 アップロード</div><div>2 プレビュー</div><div>3 ドライラン</div><div>4 コミット</div>
+      </div>
+      <div class="sub-label">インポートの種類</div>
+      <div class="seg"><div class="on">曲マスター</div><div>セットリスト履歴</div></div>
+      <div class="sub-label">CSVファイル</div>
+      <div class="field" style="text-align:center; padding: 24px 14px;">タップしてファイルを選択<br><span style="font-size:11px;">（songs.csv / setlists.csv）</span></div>
+      <button class="btn btn-primary">アップロードしてプレビューへ</button>
+      <div class="label">中断中のインポート</div>
+      <div class="card row">
+        <div class="grow">
+          <div class="song-title" style="font-size:14px;">setlists.csv</div>
+          <div class="meta">2026-07-10 ・ プレビュー中（job #18）</div>
+        </div>
+        <button class="btn btn-secondary btn-sm">再開</button>
+      </div>
+      <div class="note"><strong>挙動:</strong> アップロード後、行単位バリデーション（zod）を実行して Step 2 へ。ウィザードは中断しても <strong>job_id で再開可能</strong>（PREVIEW中のジョブを一覧表示）。</div>
+    </div>
+  </div>
+
+  <div class="arrow">→</div>
+
+  <!-- Screen 6: Step2 -->
+  <div class="screen">
+    <div class="screen-header">Screen 6 — Step 2: プレビュー（エラー行・店舗区分・曲名解決）</div>
+    <div class="appbar"><span class="title">‹ CSVインポート</span></div>
+    <div class="screen-body">
+      <div class="steps">
+        <div class="done">1 ✓</div><div class="on">2 プレビュー</div><div>3 ドライラン</div><div>4 コミット</div>
+      </div>
+      <div class="card row" style="background:#fafafa;">
+        <div class="grow" style="font-size:13px;">setlists.csv — 総行数 <strong>320</strong> / 有効 <strong>298</strong> / エラー <strong>3</strong> <span class="badge badge-danger">エラー 3件</span></div>
+      </div>
+      <div class="sub-label">エラー行（インポート対象外）</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>行</th><th>理由</th><th>元データ</th></tr></thead>
+          <tbody>
+            <tr><td>41</td><td>不明なジャンル "swing"</td><td>2025-04-01, XYZ, …</td></tr>
+            <tr><td>87</td><td>日付形式エラー</td><td>2025/13/40, ABC, …</td></tr>
+            <tr><td>203</td><td>曲名が空</td><td>2026-01-11, XYZ, …</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="sub-label">未知の店舗の区分確定（1件）</div>
+      <div class="card row">
+        <div class="grow song-title" style="font-size:14px;">Jazz Bar ABC</div>
+        <div class="toggle"><div>母店</div><div class="on">母店以外</div></div>
+      </div>
+      <div class="sub-label">曲名の不一致（2件） <span class="badge badge-warning">未解決 1件</span></div>
+      <div class="card">
+        <div class="song-title" style="font-size:14px;">"Confermation"</div>
+        <div class="meta">近似候補: Confirmation（89%）</div>
+        <div class="seg sm" style="margin-top:8px;"><div class="on">候補に一致</div><div>新規スタブ作成</div><div>スキップ</div></div>
+      </div>
+      <div class="card">
+        <div class="song-title" style="font-size:14px;">"Bolivia"</div>
+        <div class="meta">近似候補: なし</div>
+        <div class="seg sm" style="margin-top:8px;"><div>候補に一致</div><div>新規スタブ作成</div><div class="on">スキップ</div></div>
+      </div>
+      <button class="btn btn-text">未解決をすべてスタブ作成（一括）</button>
+      <div class="btn-row">
+        <button class="btn btn-secondary">戻る</button>
+        <button class="btn btn-primary">ドライラン実行</button>
+      </div>
+      <div class="note"><strong>挙動:</strong> 店舗区分・曲名解決は<strong>セットリスト履歴インポート時のみ</strong>表示。曲名解決は未解決のみ表示+件数バッジ+一括操作（数百件対応）。スタブ作成された曲は「属性未整備」になる。</div>
+    </div>
+  </div>
+
+  <div class="arrow">→</div>
+
+  <!-- Screen 7: Step3 -->
+  <div class="screen">
+    <div class="screen-header">Screen 7 — Step 3: ドライラン差分</div>
+    <div class="appbar"><span class="title">‹ CSVインポート</span></div>
+    <div class="screen-body">
+      <div class="steps">
+        <div class="done">1 ✓</div><div class="done">2 ✓</div><div class="on">3 ドライラン</div><div>4 コミット</div>
+      </div>
+      <div class="label">取り込み内容（まだ保存されません）</div>
+      <div class="table-wrap">
+        <table>
+          <tbody>
+            <tr><td>新規曲</td><td style="text-align:right;"><strong>12</strong> 件</td></tr>
+            <tr><td>既存曲の更新</td><td style="text-align:right;"><strong>3</strong> 件</td></tr>
+            <tr><td>新規店舗</td><td style="text-align:right;"><strong>1</strong> 件</td></tr>
+            <tr><td>新規セッション</td><td style="text-align:right;"><strong>24</strong> 件</td></tr>
+            <tr><td>演奏記録</td><td style="text-align:right;"><strong>186</strong> 件</td></tr>
+            <tr><td>スキップ</td><td style="text-align:right;"><strong>5</strong> 件</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary">戻る</button>
+        <button class="btn btn-primary">コミットへ進む</button>
+      </div>
+      <div class="note"><strong>挙動:</strong> ドライランはDBを変更しない差分サマリ。「戻る」で Step 2 の解決内容を修正できる。</div>
+    </div>
+  </div>
+
+  <div class="arrow">→</div>
+
+  <!-- Screen 8: Step4 -->
+  <div class="screen">
+    <div class="screen-header">Screen 8 — Step 4: コミット / 結果</div>
+    <div class="appbar"><span class="title">‹ CSVインポート</span></div>
+    <div class="screen-body">
+      <div class="steps">
+        <div class="done">1 ✓</div><div class="done">2 ✓</div><div class="done">3 ✓</div><div class="on">4 コミット</div>
+      </div>
+      <div class="check"><span class="box on">✓</span> 取込後に has_played（演奏経験）を再計算する</div>
+      <div class="help">participated=1 の履歴がある曲を「コール可能」にします。</div>
+      <button class="btn btn-primary">コミット実行</button>
+      <button class="btn btn-destructive">このインポートを破棄</button>
+      <div class="divider-strong"></div>
+      <div class="label">実行結果（コミット完了時）</div>
+      <div class="card" style="border-color: rgba(16,185,129,0.35);">
+        <div class="row" style="margin-bottom:6px;"><span class="badge badge-success">取込完了</span></div>
+        <div style="font-size:13px; line-height:1.8;">
+          新規曲 12 ・ 更新 3 ・ 新規店舗 1<br>
+          新規セッション 24 ・ 演奏記録 186 ・ スキップ 5<br>
+          has_played 再計算: 8曲を「コール可能」に更新
+        </div>
+      </div>
+      <div class="note"><strong>挙動:</strong> コミットは単一トランザクション。「破棄」でジョブを DISCARDED にして Step 1 へ戻る（破壊的操作のため Destructive スタイル+確認）。</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================================================ -->
+<div class="section-label">参考: PCレイアウト（1024px） — マスター整備・インポートはPC利用も想定</div>
+<div class="flow">
+
+  <!-- Screen 9: PC wide -->
+  <div class="screen wide">
+    <div class="screen-header">Screen 9 — 曲マスター一覧 "/songs"（PC・1024px）</div>
+    <div class="screen-body">
+      <div class="row" style="justify-content:space-between; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+        <span style="font-size:18px; font-weight:700;">曲マスター <span style="font-weight:400; color:#999; font-size:14px;">(312)</span></span>
+        <div class="row" style="gap:8px;">
+          <div class="field sm" style="width:240px; text-align:left;">曲名で検索…</div>
+          <button class="btn btn-secondary btn-sm">＋ 新規追加</button>
+          <button class="btn btn-secondary btn-sm">インポート</button>
+        </div>
+      </div>
+      <div class="chips">
+        <span class="chip on">属性未整備</span><span class="chip">コール可能</span><span class="chip">黒本1</span><span class="chip">季節 ▾</span><span class="chip">ジャンル ▾</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>曲名</th><th>キー</th><th>構成</th><th>リスナー受け</th><th>盛り上がり</th><th>ジャンル</th><th>状態</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="font-weight:600;">Alone Together</td><td>F</td><td>AABA</td><td>3</td><td>3</td><td>—</td>
+              <td><span class="badge badge-success">コール可能</span></td>
+            </tr>
+            <tr>
+              <td style="font-weight:600;">Blue Bossa</td><td>C</td><td>その他</td><td>4</td><td>3</td><td><span class="badge badge-info">ボサノバ</span></td>
+              <td><span class="badge badge-success">コール可能</span></td>
+            </tr>
+            <tr>
+              <td style="font-weight:600;">Confirmation</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>
+              <td><span class="badge badge-warning">属性未整備</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note"><strong>レスポンシブ方針（design_rule §6.5/§8.5）:</strong> モバイル（375px）ではカードリスト（Screen 1）、PC（1024px）ではテーブル表示。テーブルは overflow-x-auto で横スクロール許容・折返しで崩さない。インポートウィザードのエラー行・曲名解決テーブルも同様に両対応。</div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wireframe: unit-06 選曲支援・推薦結果画面</title>
+<style>
+  /* === BASE（ローファイ・グレーボックス / design_rule.md のトーン準拠） === */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, sans-serif; background: #f5f5f5; color: #333; padding: 40px 20px; }
+  h1 { text-align: center; font-size: 18px; color: #666; margin-bottom: 8px; }
+  .subtitle { text-align: center; font-size: 13px; color: #999; margin-bottom: 40px; }
+  .section-label { text-align: center; font-size: 14px; font-weight: 600; color: #666; margin: 48px 0 20px; }
+
+  /* === LAYOUT === */
+  .flow { display: flex; gap: 28px; justify-content: center; align-items: flex-start; flex-wrap: wrap; }
+  .arrow { display: flex; align-items: center; font-size: 28px; color: #bbb; padding-top: 200px; }
+
+  /* === SCREEN CARDS（モバイル375px枠） === */
+  .screen { width: 375px; background: #fff; border: 2px solid #ddd; border-radius: 16px; overflow: hidden; }
+  .screen-header {
+    background: #e8e8e8; padding: 12px 16px; font-size: 11px; font-weight: 600;
+    color: #888; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #ddd;
+  }
+  .screen-body { padding: 16px; }
+  .screen-title { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+
+  /* === APP SHELL === */
+  .appbar { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid #e0e0e0; }
+  .appbar .title { font-size: 16px; font-weight: 700; }
+  .appbar .sub { font-size: 12px; color: #888; }
+  .fixedbar { border-top: 1px solid #e0e0e0; background: #fafafa; padding: 12px 16px; }
+  .fixedbar .hint { font-size: 10px; color: #aaa; text-align: center; margin-top: 6px; }
+
+  /* === SECTION HEADINGS === */
+  .label { font-size: 13px; font-weight: 700; margin: 16px 0 8px; }
+  .label:first-child { margin-top: 0; }
+  .sub-label { font-size: 12px; font-weight: 600; color: #666; margin: 10px 0 4px; }
+  .help { font-size: 11px; color: #999; margin-bottom: 10px; line-height: 1.4; }
+
+  /* === BUTTONS === */
+  .btn { display: block; width: 100%; min-height: 40px; padding: 10px 16px; border-radius: 8px; border: none;
+    font-size: 15px; font-weight: 600; cursor: default; margin-bottom: 8px; text-align: center; }
+  .btn-primary { background: #52525b; color: #fff; }
+  .btn-primary.disabled { opacity: 0.5; }
+  .btn-secondary { background: #f0f0f0; color: #555; border: 1px solid #ddd; }
+  .btn-sm { min-height: 34px; padding: 7px 12px; font-size: 13px; width: auto; display: inline-block; margin: 0; }
+  .btn-text { background: none; color: #666; font-size: 13px; min-height: auto; padding: 6px; }
+  .btn-row { display: flex; gap: 8px; } .btn-row .btn { margin-bottom: 0; }
+
+  /* === SEGMENT === */
+  .seg { display: flex; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; margin-bottom: 10px; }
+  .seg div { flex: 1; text-align: center; padding: 10px 4px; font-size: 13px; color: #888; border-right: 1px solid #ccc; }
+  .seg div:last-child { border-right: none; }
+  .seg .on { background: #e4e4e7; color: #333; font-weight: 700; }
+
+  /* === CHECKBOX === */
+  .check { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 6px 0; }
+  .check .box { width: 18px; height: 18px; border: 2px solid #bbb; border-radius: 4px; flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center; font-size: 12px; color: #444; }
+  .check .box.on { background: #e4e4e7; border-color: #888; }
+
+  /* === CHIPS === */
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .chip { border: 1px solid #ccc; border-radius: 999px; padding: 6px 12px; font-size: 12px; color: #777; background: #fff; }
+  .chip.on { background: #e4e4e7; border-color: #888; color: #333; font-weight: 700; }
+
+  /* === SLIDER（5段階スナップ・左右ラベル直接表示） === */
+  .slider { margin-bottom: 14px; }
+  .slider .name { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .slider .ends { display: flex; justify-content: space-between; font-size: 10px; color: #999; margin-bottom: 4px; }
+  /* Apple(iOS)風スライダー: 細いレール+中央からのティント+白い円形ノブ+5段階ドット */
+  .slider .track { position: relative; height: 30px; margin: 2px 10px; }
+  .slider .rail { position: absolute; top: 13px; left: 0; right: 0; height: 4px; border-radius: 2px; background: #e4e4e7; }
+  .slider .fill { position: absolute; top: 13px; height: 4px; border-radius: 2px; background: #007aff; }
+  .slider .dots { position: absolute; top: 13px; left: 0; right: 0; height: 4px; }
+  .slider .dots i { position: absolute; top: -1px; width: 6px; height: 6px; border-radius: 50%; background: #d4d4d8; transform: translateX(-3px); }
+  .slider .dots i:nth-child(1){left:0%} .slider .dots i:nth-child(2){left:25%} .slider .dots i:nth-child(3){left:50%} .slider .dots i:nth-child(4){left:75%} .slider .dots i:nth-child(5){left:100%}
+  .slider .thumb { position: absolute; top: 2px; width: 26px; height: 26px; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.25), 0 0 0 .5px rgba(0,0,0,.06); transform: translateX(-13px); }
+  .slider .track.p0 .thumb{left:0%} .slider .track.p1 .thumb{left:25%} .slider .track.p2 .thumb{left:50%} .slider .track.p3 .thumb{left:75%} .slider .track.p4 .thumb{left:100%}
+  .slider .track.p0 .fill{left:0;width:50%} .slider .track.p1 .fill{left:25%;width:25%} .slider .track.p2 .fill{width:0} .slider .track.p3 .fill{left:50%;width:25%} .slider .track.p4 .fill{left:50%;width:50%}
+
+  /* === BADGES === */
+  .badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 2px 8px; font-size: 10px; font-weight: 600; border: 1px solid; white-space: nowrap; }
+  .badge-neutral { background: #f4f4f5; color: #666; border-color: #ddd; }
+  .badge-info { background: rgba(14,165,233,0.08); color: #0369a1; border-color: rgba(14,165,233,0.25); }
+  .badge-warning { background: rgba(245,158,11,0.10); color: #b45309; border-color: rgba(245,158,11,0.25); }
+  .badge-success { background: rgba(16,185,129,0.08); color: #047857; border-color: rgba(16,185,129,0.25); }
+
+  /* === CANDIDATE CARDS === */
+  .card { border: 1px solid #e0e0e0; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
+  .card .song-title { font-size: 17px; font-weight: 700; }
+  .card .meta { font-size: 11px; color: #999; margin: 2px 0 8px; }
+  .reasons { font-size: 12px; color: #555; line-height: 1.6; margin-bottom: 10px; padding-left: 2px; }
+  .reasons li { list-style: none; padding-left: 14px; position: relative; }
+  .reasons li::before { content: "・"; position: absolute; left: 0; color: #999; }
+  .row { display: flex; align-items: center; gap: 8px; }
+  .row .grow { flex: 1; min-width: 0; }
+  .compact-card { border: 2px dashed #ddd; border-radius: 12px; padding: 14px; text-align: center; color: #bbb; font-size: 12px; margin-bottom: 10px; }
+
+  /* === INFO CALLOUT（isSparse注記） === */
+  .info-block { background: rgba(14,165,233,0.06); border: 1px solid rgba(14,165,233,0.25); border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #0369a1; margin-bottom: 12px; line-height: 1.5; }
+
+  /* === FLOW NOTES === */
+  .note { background: #fffde7; border: 1px solid #fff176; border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #666; margin-top: 12px; line-height: 1.5; }
+  .note strong { color: #333; }
+  .copy-note { font-size: 11px; color: #e65100; font-style: italic; margin-top: 4px; }
+
+  /* === COLLAPSED / PLACEHOLDER === */
+  .collapse { border: 1px solid #e0e0e0; border-radius: 8px; padding: 10px 12px; font-size: 13px; color: #777; margin-bottom: 10px; display: flex; justify-content: space-between; }
+  .placeholder { background: #e0e0e0; border-radius: 8px; height: 40px; margin-bottom: 12px; }
+  .placeholder.tall { height: 90px; }
+  .divider-strong { border-top: 2px solid #e8e8e8; margin: 16px -16px; }
+</style>
+</head>
+<body>
+
+<h1>next-call — ジャズセッション向け選曲提案アプリ MVP</h1>
+<p class="subtitle">ワイヤーフレーム — unit-06: 選曲支援・推薦結果画面（"/sessions/[id]/recommend"、1画面で条件→結果を上下配置）— AI-DLC Elaboration Artifact</p>
+
+<!-- ============================================================ -->
+<div class="section-label">フロー1: 条件入力（画面上部） — 初期表示と調整</div>
+<div class="flow">
+
+  <!-- Screen 1: 条件入力（初期表示） -->
+  <div class="screen">
+    <div class="screen-header">Screen 1 — 条件入力（初期表示・前回値引き継ぎ）</div>
+    <div class="appbar">
+      <div>
+        <div class="title">‹ 次の曲を考える</div>
+        <div class="sub">Jazz Spot XYZ ・ 3曲目</div>
+      </div>
+    </div>
+    <div class="screen-body">
+      <div class="label">編成条件（次の1曲）</div>
+      <div class="sub-label">管楽器</div>
+      <div class="seg"><div>1人</div><div>複数</div><div class="on">わからない</div></div>
+      <div class="sub-label">初心者</div>
+      <div class="seg"><div>いない</div><div>いる</div><div class="on">わからない</div></div>
+
+      <div class="label">制約</div>
+      <div class="sub-label">黒本1</div>
+      <div class="seg"><div class="on">制限なし</div><div>黒本1曲載のみ</div></div>
+      <div class="help">次の曲を選ぶ都度、変更できます（仕様§11.2）。</div>
+      <div class="collapse"><span>ジャンル上書き（任意）</span><span>▸</span></div>
+
+      <div class="label">今回の意図（前回の値を引き継ぎ）</div>
+      <div class="slider">
+        <div class="name">珍しい曲</div>
+        <div class="ends"><span>強い減点</span><span>強い加点</span></div>
+        <div class="track p2"><span class="rail"></span><span class="dots"><i></i><i></i><i></i><i></i><i></i></span><span class="fill"></span><span class="thumb"></span></div>
+      </div>
+      <div class="slider">
+        <div class="name">久しぶりの曲</div>
+        <div class="ends"><span>強い減点</span><span>強い加点</span></div>
+        <div class="track p3"><span class="rail"></span><span class="dots"><i></i><i></i><i></i><i></i><i></i></span><span class="fill"></span><span class="thumb"></span></div>
+      </div>
+      <div class="slider">
+        <div class="name">攻め方</div>
+        <div class="ends"><span>安全に行く</span><span>攻める</span></div>
+        <div class="track p1"><span class="rail"></span><span class="dots"><i></i><i></i><i></i><i></i><i></i></span><span class="fill"></span><span class="thumb"></span></div>
+      </div>
+      <div class="slider">
+        <div class="name">場の温度</div>
+        <div class="ends"><span>落ち着かせる</span><span>盛り上げる</span></div>
+        <div class="track p2"><span class="rail"></span><span class="dots"><i></i><i></i><i></i><i></i><i></i></span><span class="fill"></span><span class="thumb"></span></div>
+      </div>
+      <div class="slider">
+        <div class="name">バラード</div>
+        <div class="ends"><span>避けたい</span><span>やりたい</span></div>
+        <div class="track p2"><span class="rail"></span><span class="dots"><i></i><i></i><i></i><i></i><i></i></span><span class="fill"></span><span class="thumb"></span></div>
+      </div>
+      <div class="copy-note">^ Copy: スライダー名（「攻め方」「場の温度」）は要プロダクトレビュー（仕様は左右ラベルのみ規定）。スライダーはApple(iOS)風＝細レール+青ティント+白丸ノブ+5段階スナップ（ユーザー指定）</div>
+      <div class="check"><span class="box"></span> 季節感（夏の曲を重視）</div>
+      <div class="check"><span class="box"></span> リスナー受けを重視</div>
+      <div class="help">季節ラベルはセッション日付から自動表示（利用者は季節を選ばない・仕様§9.7）。リスナー客なしのセッションでも無効化はせず既定OFF。</div>
+      <div class="note"><strong>初期表示:</strong> GET …/recommendations/defaults で前回意図値をロード。中央=何もしない（5段階 −2..+2 スナップ、タッチ領域は大きく）。<strong>1曲目のときのみ</strong>季節感チェックを推奨ONで初期化（Screen 2 参照）。</div>
+    </div>
+    <div class="fixedbar">
+      <button class="btn btn-primary" style="margin-bottom:0;">候補を出す</button>
+      <div class="hint">画面下部固定 ・ POST /api/sessions/:id/recommendations → 結果セクションへ自動スクロール</div>
+    </div>
+  </div>
+
+  <div class="arrow">→</div>
+
+  <!-- Screen 2: ジャンル上書き展開 + 1曲目状態 -->
+  <div class="screen">
+    <div class="screen-header">Screen 2 — 条件調整（ジャンル上書き展開 / 1曲目の状態）</div>
+    <div class="appbar">
+      <div>
+        <div class="title">‹ 次の曲を考える</div>
+        <div class="sub">Jazz Spot XYZ ・ 1曲目</div>
+      </div>
+    </div>
+    <div class="screen-body">
+      <div class="label">制約</div>
+      <div class="sub-label">黒本1</div>
+      <div class="seg"><div>制限なし</div><div class="on">黒本1曲載のみ</div></div>
+      <div class="collapse" style="border-color:#bbb;"><span>ジャンル上書き（任意）</span><span>▾</span></div>
+      <div class="chips">
+        <span class="chip">ボサノバ</span><span class="chip">3拍子</span><span class="chip">モード</span><span class="chip">ファンク</span><span class="chip on">ブルース</span><span class="chip">歌もの</span><span class="chip">循環</span>
+      </div>
+      <div class="help">指定すると該当ジャンルを<strong>強く優先</strong>します（絞り込みではありません）。複数選択可。バラードは下のスライダーで指定します。</div>
+      <div class="copy-note">^ Copy: 「強く優先します」の説明文は要プロダクトレビュー（「絞り込み」と書かないこと・仕様§10）</div>
+
+      <div class="label">今回の意図</div>
+      <div class="slider">
+        <div class="name">珍しい曲</div>
+        <div class="ends"><span>強い減点</span><span>強い加点</span></div>
+        <div class="track p2"><span class="rail"></span><span class="dots"><i></i><i></i><i></i><i></i><i></i></span><span class="fill"></span><span class="thumb"></span></div>
+      </div>
+      <div style="border:2px dashed #ddd; border-radius:12px; height:110px; display:flex; align-items:center; justify-content:center; color:#bbb; font-size:12px; margin-bottom:10px;">…（残りスライダー4本は Screen 1 と同じ）</div>
+      <div class="check"><span class="box on">✓</span> 季節感（夏の曲を重視）<span class="badge badge-info" style="margin-left:4px;">推奨</span></div>
+      <div class="check"><span class="box"></span> リスナー受けを重視</div>
+      <div class="note"><strong>1曲目の挙動（仕様§9.7）:</strong> セッション1曲目のときのみ季節感チェックを推奨ONで初期化。ユーザーはOFFに変更できる。<br><strong>黒本1曲載のみ</strong>選択時、条件外の保留曲には結果側で警告バッジが付く（Screen 4）。</div>
+    </div>
+    <div class="fixedbar">
+      <button class="btn btn-primary" style="margin-bottom:0;">候補を出す</button>
+      <div class="hint">タップ数の担保: 「次の曲を考える」(1) → 「候補を出す」(2) で最短2タップ。条件調整は任意</div>
+    </div>
+  </div>
+
+  <div class="arrow">→</div>
+
+  <!-- Screen 3: ローディング -->
+  <div class="screen">
+    <div class="screen-header">Screen 3 — 結果待ち（スケルトン表示）</div>
+    <div class="appbar">
+      <div><div class="title">‹ 次の曲を考える</div></div>
+    </div>
+    <div class="screen-body">
+      <div style="border:2px dashed #ddd; border-radius:12px; height:80px; display:flex; align-items:center; justify-content:center; color:#bbb; font-size:12px; margin-bottom:12px;">条件セクション（入力済み・上部）</div>
+      <div class="divider-strong"></div>
+      <div class="label">候補</div>
+      <div class="placeholder tall"></div>
+      <div class="placeholder tall"></div>
+      <div class="placeholder tall"></div>
+      <div class="note"><strong>挙動:</strong> 推薦API実行中はスケルトン表示。「候補を出す」ボタンは無効化（二重実行防止）。完了後、結果セクションへ自動スクロール。</div>
+    </div>
+    <div class="fixedbar">
+      <button class="btn btn-primary disabled" style="margin-bottom:0;">候補を出す…</button>
+      <div class="hint">実行中はボタン無効化</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================================================ -->
+<div class="section-label">フロー2: 推薦結果（画面下部） — 通常 / 候補少数 / 保留曲枠</div>
+<div class="flow">
+
+  <!-- Screen 4: 推薦結果（通常） -->
+  <div class="screen">
+    <div class="screen-header">Screen 4 — 推薦結果（通常・同一画面の下部セクション）</div>
+    <div class="screen-body">
+      <div style="border:2px dashed #ddd; border-radius:12px; height:60px; display:flex; align-items:center; justify-content:center; color:#bbb; font-size:12px; margin-bottom:12px;">条件セクション（上部・スクロールで戻れる）</div>
+      <div class="divider-strong"></div>
+      <div class="label">候補（3曲）</div>
+      <div class="card">
+        <div class="song-title">I Remember You</div>
+        <div class="meta">key: F ・ AABA ・ V. Schertzinger</div>
+        <ul class="reasons">
+          <li>最後に演奏してから1年2ヶ月経っています</li>
+          <li>この店では珍しい曲です（直近2年で1回）</li>
+          <li>直前の曲とキー・構成・雰囲気が異なります</li>
+        </ul>
+        <div class="btn-row">
+          <button class="btn btn-secondary btn-sm" style="flex:1;">この曲をコール</button>
+          <button class="btn btn-secondary btn-sm" style="flex:1;">保留に追加</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="row" style="margin-bottom:2px;">
+          <div class="grow song-title">If I Should Lose You</div>
+          <span class="badge badge-warning">保留中</span>
+        </div>
+        <div class="meta">key: B♭ ・ ABAC ・ R. Rainger</div>
+        <ul class="reasons">
+          <li>保留リストに入っている曲です</li>
+          <li>盛り上げたい意図に合っています</li>
+        </ul>
+        <div class="btn-row">
+          <button class="btn btn-secondary btn-sm" style="flex:1;">この曲をコール</button>
+          <button class="btn btn-secondary btn-sm" style="flex:1;" disabled>保留に追加</button>
+        </div>
+      </div>
+      <div class="compact-card">（候補カード 3/3 — 同構成）</div>
+      <div class="note"><strong>挙動:</strong> 推奨理由はAPIが返す文字列をそのまま2〜4件表示（フロントで加工しない）。「この曲をコール」→ unit-05 の曲追加シートを <strong>called_by_me=true・曲確定済み</strong>で開く（参加楽器等を確認して保存）→ 保存後セッション記録画面へ戻る。保留中の曲のコールは自動解除（unit-04）。Primaryは画面内1つ（下部固定の再抽選導線を優先）のため、カード内アクションはSecondaryで統一。</div>
+    </div>
+    <div class="fixedbar">
+      <button class="btn btn-secondary" style="margin-bottom:0;">条件を変えて再抽選</button>
+      <div class="hint">タップで意図セクション（上部）へ戻る ・ 再実行は新規リクエストとして保存（繰り返し減点が効く）</div>
+    </div>
+  </div>
+
+  <div class="arrow">→</div>
+
+  <!-- Screen 5: isSparse + 条件別候補 -->
+  <div class="screen">
+    <div class="screen-header">Screen 5 — 候補少数（isSparse）+ 条件別候補</div>
+    <div class="screen-body">
+      <div class="label">候補（1曲）</div>
+      <div class="info-block">条件が強く、候補が1曲に絞られました。条件を緩めるとさらに提案できます。</div>
+      <div class="copy-note">^ Copy: isSparse注記の文言は要プロダクトレビュー（無理に候補を増やさない・仕様§14.5）</div>
+      <div class="card">
+        <div class="song-title">Billie's Bounce</div>
+        <div class="meta">key: F ・ 12小節ブルース ・ C. Parker</div>
+        <ul class="reasons">
+          <li>ブルース指定に合致します</li>
+          <li>黒本1に掲載されています</li>
+        </ul>
+        <div class="btn-row">
+          <button class="btn btn-secondary btn-sm" style="flex:1;">この曲をコール</button>
+          <button class="btn btn-secondary btn-sm" style="flex:1;">保留に追加</button>
+        </div>
+      </div>
+
+      <div class="label">条件別候補（編成が「わからない」のとき）</div>
+      <div class="card" style="background:#fafafa;">
+        <div class="row" style="margin-bottom:2px;">
+          <span class="badge badge-info">複数管なら</span>
+        </div>
+        <div class="song-title" style="font-size:15px;">Softly, As in a Morning Sunrise</div>
+        <div class="meta">key: Cm ・ AABA ・ S. Romberg</div>
+        <ul class="reasons">
+          <li>ハーモニーを重ねやすい曲です</li>
+        </ul>
+        <div class="btn-row">
+          <button class="btn btn-secondary btn-sm" style="flex:1;">この曲をコール</button>
+          <button class="btn btn-secondary btn-sm" style="flex:1;">保留に追加</button>
+        </div>
+      </div>
+      <div class="card" style="background:#fafafa;">
+        <div class="row" style="margin-bottom:2px;">
+          <span class="badge badge-info">初心者が参加するなら</span>
+        </div>
+        <div class="song-title" style="font-size:15px;">Autumn Leaves</div>
+        <div class="meta">key: Gm ・ AABC ・ J. Kosma</div>
+        <ul class="reasons">
+          <li>超定番でコード進行が分かりやすい曲です</li>
+        </ul>
+        <div class="btn-row">
+          <button class="btn btn-secondary btn-sm" style="flex:1;">この曲をコール</button>
+          <button class="btn btn-secondary btn-sm" style="flex:1;">保留に追加</button>
+        </div>
+      </div>
+      <div class="note"><strong>挙動:</strong> 条件別候補（「1管なら」「複数管なら」「初心者が参加するなら」）は該当する candidate_type が存在するときのみ、ラベル付きで通常候補と区別して表示。</div>
+    </div>
+    <div class="fixedbar">
+      <button class="btn btn-secondary" style="margin-bottom:0;">条件を変えて再抽選</button>
+    </div>
+  </div>
+
+  <div class="arrow">→</div>
+
+  <!-- Screen 6: 保留曲枠 -->
+  <div class="screen">
+    <div class="screen-header">Screen 6 — 保留曲枠（結果の最下部・常時表示）</div>
+    <div class="screen-body">
+      <div style="border:2px dashed #ddd; border-radius:12px; height:60px; display:flex; align-items:center; justify-content:center; color:#bbb; font-size:12px; margin-bottom:12px;">通常候補・条件別候補（上）</div>
+      <div class="divider-strong"></div>
+      <div class="label">保留中の曲（3曲）</div>
+      <div class="help">条件に関係なく、保留中の曲をすべて表示します。</div>
+      <div class="card">
+        <div class="row" style="margin-bottom:4px; flex-wrap:wrap;">
+          <div class="grow song-title" style="font-size:15px;">Confirmation</div>
+          <span class="badge badge-warning">本日演奏済み</span>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-secondary btn-sm" style="flex:1;">コール</button>
+          <button class="btn btn-secondary btn-sm" style="flex:1;">保留解除</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="row" style="margin-bottom:4px; flex-wrap:wrap;">
+          <div class="grow song-title" style="font-size:15px;">Moment's Notice</div>
+          <span class="badge badge-warning">黒本1条件外</span>
+          <span class="badge badge-warning">編成に合いにくい</span>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-secondary btn-sm" style="flex:1;">コール</button>
+          <button class="btn btn-secondary btn-sm" style="flex:1;">保留解除</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="row" style="margin-bottom:4px;">
+          <div class="grow song-title" style="font-size:15px;">Lady Bird</div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-secondary btn-sm" style="flex:1;">コール</button>
+          <button class="btn btn-secondary btn-sm" style="flex:1;">保留解除</button>
+        </div>
+      </div>
+      <div class="note"><strong>挙動:</strong> 警告バッジは完全除外チェックの再評価結果（本日演奏済み／直前と同構成／黒本1条件外／編成に合いにくい）。警告があってもコール可能。「コール」→ unit-05 曲追加シート（called_by_me=true・曲確定）→ 保存で保留を解除。「保留解除」は行削除。状態は色+テキストで表現（design_rule §8.2）。</div>
+    </div>
+    <div class="fixedbar">
+      <button class="btn btn-secondary" style="margin-bottom:0;">条件を変えて再抽選</button>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
