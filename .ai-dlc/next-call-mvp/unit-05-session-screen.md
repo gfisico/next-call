@@ -1,6 +1,6 @@
 ---
-status: pending
-last_updated: ""
+status: in_progress
+last_updated: "2026-07-12T16:17:59Z"
 depends_on: [unit-03-master-session-api]
 branch: ai-dlc/next-call-mvp/05-session-screen
 discipline: frontend
