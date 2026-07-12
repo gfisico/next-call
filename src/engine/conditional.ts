@@ -70,7 +70,7 @@ export function generateConditionalCandidates(
       config,
     );
 
-    // ブランチの最上位曲（同点は曲 ID 昇順で決定的に）
+    // ブランチの最上位曲（同点は入力順で先の曲を採用し決定的に）
     let top = passed[0];
     for (const song of passed) {
       if ((scores.get(song.id) ?? -Infinity) > (scores.get(top.id) ?? -Infinity)) {
