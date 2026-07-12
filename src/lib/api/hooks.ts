@@ -10,6 +10,7 @@ import {
   ApiClientError,
   fetchActiveSession,
   fetchInstruments,
+  fetchRecommendationDefaults,
   fetchSession,
   fetchSessions,
   fetchVenues,
@@ -17,6 +18,7 @@ import {
 } from "./client";
 import type {
   Instrument,
+  RecommendationDefaults,
   SessionDetail,
   SessionSummary,
   Song,
@@ -30,6 +32,8 @@ export const SWR_KEYS = {
   venues: "/api/venues",
   instruments: "/api/instruments",
   session: (id: number) => `/api/sessions/${id}`,
+  recommendationDefaults: (id: number) =>
+    `/api/sessions/${id}/recommendations/defaults`,
 } as const;
 
 /** 進行中セッション。無い場合（404）は null を正常値として返す */
@@ -70,6 +74,15 @@ export function useVenues() {
     fetchVenues,
   );
   return { venues: data ?? [], error, isLoading, mutate };
+}
+
+/** 選曲支援画面の初期値（前回意図値・条件既定・季節感推奨フラグ）。GET のみ */
+export function useRecommendationDefaults(sessionId: number | null) {
+  const { data, error, isLoading } = useSWR<RecommendationDefaults>(
+    sessionId === null ? null : SWR_KEYS.recommendationDefaults(sessionId),
+    () => fetchRecommendationDefaults(sessionId as number),
+  );
+  return { defaults: data ?? null, error, isLoading };
 }
 
 export function useInstruments() {
