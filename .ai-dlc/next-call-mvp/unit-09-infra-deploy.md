@@ -1,6 +1,6 @@
 ---
-status: pending
-last_updated: ""
+status: in_progress
+last_updated: "2026-07-12T18:58:39Z"
 depends_on: [unit-01-app-foundation]
 branch: ai-dlc/next-call-mvp/09-infra-deploy
 discipline: infrastructure
@@ -22,6 +22,7 @@ operations:
   runbooks: [docs/ops.md]
   rollback: "GHCRの直前タグ（:sha）を compose で指定して up -d。DBは追加的マイグレーションのため巻き戻し不要"
   scaling: "単一ユーザー・単一コンテナ。スケーリング対象外"
+hat: planner
 ---
 
 # unit-09-infra-deploy
