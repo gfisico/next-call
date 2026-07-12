@@ -1,6 +1,6 @@
 ---
-status: pending
-last_updated: ""
+status: in_progress
+last_updated: "2026-07-12T18:16:28Z"
 depends_on: [unit-03-master-session-api, unit-08-csv-import-api]
 branch: ai-dlc/next-call-mvp/07-master-settings-screen
 discipline: frontend
@@ -14,6 +14,7 @@ deployment:
   target: docker
   artifacts: []
   environments: [production]
+hat: planner
 ---
 
 # unit-07-master-settings-screen
