@@ -20,6 +20,7 @@ import type {
   PerformanceCreateInput,
   PerformanceUpdateInput,
 } from "@/server/validation/performances";
+import { releasePendingSongOnCall } from "./pending-songs";
 import {
   listPerformancesForSession,
   type PerformanceWithFront,
@@ -169,6 +170,11 @@ export function addPerformance(
       markSongPlayed(tx, songId);
     }
 
+    // 保留曲のコール時自動解除（unit-04。設定 pending.auto_release_on_call に従う）
+    if (created.calledByMe) {
+      releasePendingSongOnCall(tx, songId);
+    }
+
     return toWithFront(tx, created.id, sessionId);
   });
 }
@@ -207,6 +213,11 @@ export function updatePerformance(
 
     if (updated.participated) {
       markSongPlayed(tx, updated.songId);
+    }
+
+    // 保留曲のコール時自動解除（unit-04。更新後 called_by_me=true のとき）
+    if (updated.calledByMe) {
+      releasePendingSongOnCall(tx, updated.songId);
     }
 
     return toWithFront(tx, id, updated.sessionId);

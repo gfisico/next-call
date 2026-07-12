@@ -31,8 +31,8 @@ export type SongWithTags = SongRow & { genreTags: string[] };
 
 const nowIso = () => new Date().toISOString();
 
-/** 曲配列にジャンルタグ名（シード順）を付与する */
-function attachGenreTags(dbx: DbOrTx, rows: SongRow[]): SongWithTags[] {
+/** 曲配列にジャンルタグ名（シード順）を付与する（unit-04 の保留曲一覧でも使用） */
+export function attachGenreTags(dbx: DbOrTx, rows: SongRow[]): SongWithTags[] {
   if (rows.length === 0) return [];
   const links = dbx
     .select({
