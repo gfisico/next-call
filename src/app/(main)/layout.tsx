@@ -1,4 +1,5 @@
 import { BottomNav } from "@/components/shell/bottom-nav";
+import { Toaster } from "@/components/ui/sonner";
 
 /**
  * 認証必須エリアの共通レイアウト（モバイルファースト app shell）:
@@ -21,6 +22,8 @@ export default function MainLayout({
         {children}
       </main>
       <BottomNav />
+      {/* トースト通知（409 誘導・保存失敗など）。handoff-notes 指示によりここでマウント */}
+      <Toaster />
     </div>
   );
 }
