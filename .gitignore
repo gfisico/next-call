@@ -50,3 +50,5 @@ next-env.d.ts
 
 # keep .env.example committed
 !.env.example
+# keep the deploy env template committed (contains no secrets)
+!.env.deploy.example
