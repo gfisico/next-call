@@ -49,6 +49,11 @@ fi
 # COPY --from=builder 行から '/app/<path>' を抽出しリポジトリ相対で存在チェック。
 while IFS= read -r src; do
   rel="${src#/app/}"
+  # .next/ 配下は builder ステージで生成されるビルド成果物であり、
+  # リポジトリには存在しない（gitignore）。実在チェックの対象外とする。
+  case "$rel" in
+    .next/*) pass "COPY build artifact (generated in builder stage): ${rel}"; continue ;;
+  esac
   if [ -e "${ROOT}/${rel}" ]; then
     pass "COPY source exists: ${rel}"
   else
