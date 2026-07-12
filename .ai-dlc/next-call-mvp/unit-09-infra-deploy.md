@@ -1,6 +1,6 @@
 ---
-status: in_progress
-last_updated: "2026-07-12T18:58:39Z"
+status: completed
+last_updated: "2026-07-12T19:31:15Z"
 depends_on: [unit-01-app-foundation]
 branch: ai-dlc/next-call-mvp/09-infra-deploy
 discipline: infrastructure
@@ -61,13 +61,13 @@ infrastructure - This unit will be executed by general-purpose agents with IaC/p
 6. **VPS固有値の扱い**: デプロイ先は **Xserver VPS**（ユーザー確定。KVM・root権限・Docker利用可）。OSは Ubuntu LTS を推奨。docs/ops.md に Xserver VPS 固有の手順を含める: 管理パネルの**パケットフィルターで 22/80/443 を開放**、OSイメージ選択、SSH鍵登録。ドメイン名・ホストIPは実装時にユーザーへ確認して設定する。Secrets 未設定時は deploy ジョブをスキップし quality/image のみ通す（フォークやSecrets未設定でもCIが赤くならない）
 
 ## Success Criteria
-- [ ] `docker build` がローカル/CIで成功し、コンテナ起動で自動マイグレーション+ /api/health が 200 を返す（deployable）
-- [ ] docker compose up -d で app+Caddy が起動する（Caddyfile はドメインをenv/プレースホルダで受け取る）
-- [ ] GitHub Actions: PR で quality が走り、main への push で quality→image→deploy が連鎖する。deploy 後のヘルスチェック失敗でワークフローが失敗する（observable）
-- [ ] backup.sh: 実行で世代ファイルが作られ、21世代目で最古の週次のみ削除される（テスト: 一時ディレクトリで21回実行）。--pin のファイルはローテーションで削除されない（operable）
-- [ ] restore.sh でバックアップから復元でき、integrity_check が ok を返す
-- [ ] Secrets 未設定の環境で deploy ジョブが安全にスキップされる
-- [ ] docs/ops.md に初回セットアップ〜リストアまでの手順が揃っている（人間がそのまま実行できる粒度）
+- [x] `docker build` がローカル/CIで成功し、コンテナ起動で自動マイグレーション+ /api/health が 200 を返す（deployable）
+- [x] docker compose up -d で app+Caddy が起動する（Caddyfile はドメインをenv/プレースホルダで受け取る）
+- [x] GitHub Actions: PR で quality が走り、main への push で quality→image→deploy が連鎖する。deploy 後のヘルスチェック失敗でワークフローが失敗する（observable）
+- [x] backup.sh: 実行で世代ファイルが作られ、21世代目で最古の週次のみ削除される（テスト: 一時ディレクトリで21回実行）。--pin のファイルはローテーションで削除されない（operable）
+- [x] restore.sh でバックアップから復元でき、integrity_check が ok を返す
+- [x] Secrets 未設定の環境で deploy ジョブが安全にスキップされる
+- [x] docs/ops.md に初回セットアップ〜リストアまでの手順が揃っている（人間がそのまま実行できる粒度）
 
 ## Risks
 - **VPS環境の詳細**: デプロイ先は Xserver VPS で確定（Docker/compose/Caddy/cron すべて利用可、非互換なし）。残る未確定はドメイン名・ホストIP・OSバージョン選択のみ。Mitigation: 実装時に確認。パケットフィルター（80/443/SSH開放）の設定漏れを ops.md のチェックリストに含める
