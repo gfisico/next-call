@@ -24,7 +24,7 @@ afterEach(() => {
 
 async function listPending() {
   const { GET } = await import("@/app/api/pending-songs/route");
-  return GET(getRequest("/api/pending-songs"));
+  return GET();
 }
 
 async function addPending(songId: number) {
