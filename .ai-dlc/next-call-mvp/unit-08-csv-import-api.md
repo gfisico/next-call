@@ -27,7 +27,7 @@ operations:
 # unit-08-csv-import-api
 
 ## Description
-曲マスター（songs.csv）と約5年分のセットリスト履歴（setlists.csv）の一括インポートAPIを実装する。discovery.md「Data Import Plan」のCSV仕様と4段階フロー（アップロード→プレビュー→ドライラン→コミット）に従う。インポートウィザードのUIは unit-07。
+曲マスター（songs.csv）と約5年分のセットリスト履歴（setlists.csv）の一括インポートAPI、および**初回限定のExcel抽出スクリプト**（やれる曲.xlsx → CSV）を実装する。discovery.md「Data Import Plan」のCSV仕様・「Excel Source Analysis」のマッピング表・4段階フロー（アップロード→プレビュー→ドライラン→コミット）に従う。インポートウィザードのUIは unit-07。
 
 ## Discipline
 backend - This unit will be executed by backend-focused agents.
@@ -56,7 +56,15 @@ Song(+GenreTag), Venue(is_home), Session, Performance。ImportJob（アップロ
    - コミット後オプション `recalc_has_played=true`: participated=1 の履歴がある曲の has_played を ON
    - 完了レスポンス: 取込件数サマリ。ImportJob を COMMITTED に更新
 5. **`DELETE /api/import/:jobId`** — プレビュー破棄（DISCARDED）
-6. **冪等性・安全性**: 同一CSVの再コミットは date+venue 重複エラーで防がれる。コミットは1ジョブ1回のみ。5,000行程度を1トランザクションで処理できること（SQLiteでは十分）
+6. **初回Excel抽出スクリプト**（`scripts/extract-excel.ts`。CLIで実行、アプリには組み込まない）:
+   - 入力: `やれる曲.xlsx` のパス（引数。**ファイルはリポジトリにコミットしない**）
+   - `list` シート（ヘッダー3行目）→ songs.csv: マッピングは discovery.md「Excel Source Analysis」の表に厳密に従う（Ready★ OR Done★ → has_played=1、#1■ → in_kurobon1=1、Genre→9語彙マッピング、Form→AABA/ABAC/BLUES12/OTHER、曖昧値はnoteへ原文保存）
+   - `logs_all` シート → setlists.csv: Date+Placeでセッション集約、PlayedPart/CallingByMe/NoScore の変換、**Logs列の括弧内からフロント編成をパース**（カンマ区切り、`as*2`→as,as、`trio`/`all`/空→編成なし、未知コードは警告リスト出力）
+   - 導出: NoScore=1 の演奏実績がある曲 → songs.no_chart_ok=1
+   - setlists.csv に front_instruments 列（`|`区切り、例: `vo|as|as`）を**追加**し、インポートAPI側もこの列を受け付ける
+   - 出力: songs.csv / setlists.csv / 警告レポート（未知ジャンル・未知楽器コード・日付不正等）
+   - テスト: 匿名化した小型 .xlsx フィクスチャで抽出結果を検証
+7. **冪等性・安全性**: 同一CSVの再コミットは date+venue 重複エラーで防がれる。コミットは1ジョブ1回のみ。5,000行程度を1トランザクションで処理できること（SQLiteでは十分）
 
 ## Success Criteria
 - [ ] songs.csv の正常取込: title upsert（新規/更新）、genres の複数タグ、season/boolean/レベル値の変換が正しいことをフィクスチャCSVでテスト
@@ -68,9 +76,12 @@ Song(+GenreTag), Venue(is_home), Session, Performance。ImportJob（アップロ
 - [ ] 同一 date+venue の二重取込がエラーで防がれる
 - [ ] recalc_has_played オプションで participated=1 の曲の has_played が ON になる
 - [ ] 取込後、登場回数・久しぶり度の集計（unit-04 の関数）に履歴が反映される（結合テスト。unit-04完成後にCIで有効化してよい）
+- [ ] 抽出スクリプト: フィクスチャxlsxから songs.csv/setlists.csv が生成され、has_played（Ready/Done）・in_kurobon1（#1）・Genreマッピング・フロント編成パース（as*2/trio/空を含む）が discovery.md の表どおりであることをテストで検証
+- [ ] setlists.csv の front_instruments 列がインポートで PerformanceFrontInstrument に順序どおり保存される
+- [ ] 実データ（約733曲・2,293演奏行）での抽出→取込のリハーサルがドライランまで通る（警告リストを人間が確認できる）
 
 ## Risks
-- **実データフォーマットが未入手**（Open Questions筆頭）: iPhoneメモ→CSV変換で想定外の形式が来る。影響: 取込失敗。Mitigation: エラー報告を行単位で丁寧に返す設計を先に固め、実データサンプル入手後に変換スクリプト（リポジトリ外でも可）を別途用意する。**実装着手前にユーザーへサンプル提供を依頼すること**
+- **Excel実データの表記揺れ**: 実データは確認済み（/Users/fisico/Downloads/やれる曲.xlsx、list 733曲・logs_all 2,293行）だが、Key の複合表記（Fm(Ab)等）・曲名の別名・Logs列の想定外書式が残る。Mitigation: 抽出は警告リストを出して人間が確認、曲名は NFKC 正規化+近似候補で解決。Excelファイル自体はコミットせず、実行時にパス指定
 - **曲名の表記揺れ**: 同一曲が別名で二重登録される。Mitigation: NFKC正規化+近似候補提示で人間が解決する（自動マージしない）
 - **大量行のメモリ**: 5,000行程度なので全行メモリ処理で問題ないが、行数上限（20,000行）を設けて明示エラー
 
