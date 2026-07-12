@@ -63,12 +63,12 @@ quality_gates:
 ### Data Sources
 
 - **SQLite（VPS、唯一の永続層）**: 全エンティティ。曲数百・演奏記録数千行規模
-- **iPhoneメモ（約5年分の履歴+曲マスター元データ）**: 実データフォーマット未入手。songs.csv / setlists.csv のCSV受け口で取込（列定義は discovery.md）
+- **Excel（やれる曲.xlsx、約5年分の履歴+曲マスター元データ）**: 実データ確認済み（2026-07-12。list 733曲・logs_all 2,293行）。初回抽出スクリプト（unit-08）で songs.csv / setlists.csv に変換し、CSV受け口で取込（列定義・マッピングは discovery.md「Data Import Plan」「Excel Source Analysis」）
 - **PiaScore（季節曲）**: 自動連携なし。CSVのseason列へ手動転記
 
 ### Data Gaps
 
-- iPhoneメモの実フォーマット未入手 → インポート実装前にサンプル提供が必要（unit-08のリスクに記載）
+- Excel実データは確認済みだが、表記揺れ・想定外書式（Keyの複合表記、曲名の別名、Logs列の変則記法等）が残るリスク → 抽出スクリプトの警告リストとインポートのプレビュー解決UIで対応（unit-08のリスクに記載）
 - 仕込み済み曲はアプリ管理外 → アプリ内コール可能曲 = has_played=true のみ
 - 母店の実店舗名 → 設定 + 初回登録UIで確定
 

@@ -64,6 +64,7 @@ RecommendationRequest / RecommendationCandidate（履歴）、SelectionIntent（
 - [ ] seed が保存され、同一 request の結果を再現できる
 - [ ] シードデータ（曲500・演奏記録5,000件）での応答時間テスト: p95 < 2秒
 - [ ] エラーは unit-03 の統一形式に従い、ACTIVE でないセッションへの推薦要求は 409（observable/deployable: 既存コンテナ構成のまま、新規環境変数なし）
+- [ ] インポート済み履歴（unit-08）が登場回数・久しぶり度の集計に反映される結合テストがある（unit-08 完成後にCIで有効化してよい。unit-08 から移設した基準）
 
 ## Risks
 - **集計クエリの性能**: N+1 や全曲スキャンの重複で遅くなる。Mitigation: 集計は曲単位に JOIN/GROUP BY でまとめ、応答時間テストをCIで実行

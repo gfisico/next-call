@@ -75,7 +75,7 @@ Song(+GenreTag), Venue(is_home), Session, Performance。ImportJob（アップロ
 - [ ] コミットは単一トランザクション: 途中で失敗させた場合に部分取込が残らない
 - [ ] 同一 date+venue の二重取込がエラーで防がれる
 - [ ] recalc_has_played オプションで participated=1 の曲の has_played が ON になる
-- [ ] 取込後、登場回数・久しぶり度の集計（unit-04 の関数）に履歴が反映される（結合テスト。unit-04完成後にCIで有効化してよい）
+- [ ] setlists 取込が performances テーブルに正しい日付（date+venue_name のセッション経由）・called_by_me で保存される（ユニット内で検証可能な基準。集計への反映の結合テストは unit-04 の成功基準に移設済み）
 - [ ] 抽出スクリプト: フィクスチャxlsxから songs.csv/setlists.csv が生成され、has_played（Ready/Done）・in_kurobon1（#1）・Genreマッピング・フロント編成パース（as*2/trio/空を含む）が discovery.md の表どおりであることをテストで検証
 - [ ] setlists.csv の front_instruments 列がインポートで PerformanceFrontInstrument に順序どおり保存される
 - [ ] 実データ（約733曲・2,293演奏行）での抽出→取込のリハーサルがドライランまで通る（警告リストを人間が確認できる）

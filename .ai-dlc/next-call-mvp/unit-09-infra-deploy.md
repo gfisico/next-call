@@ -37,7 +37,7 @@ infrastructure - This unit will be executed by general-purpose agents with IaC/p
 
 ## Data Sources
 - リポジトリ: Dockerfile, docker-compose.yml, Caddyfile, .github/workflows/deploy.yml, scripts/backup.sh, docs/ops.md
-- VPS側: /srv/next-call/{data,backup,pinned}/ ディレクトリ、.env（DATABASE_PATH, AUTH_SECRET, AUTH_GOOGLE_ID, AUTH_GOOGLE_SECRET, ALLOWED_EMAILS, AUTH_URL）
+- VPS側: /srv/next-call/{data,backup,pinned}/ ディレクトリ、.env（DATABASE_PATH, AUTH_SECRET, AUTH_GOOGLE_ID, AUTH_GOOGLE_SECRET, ALLOWED_EMAILS, AUTH_URL, TZ=Asia/Tokyo）。TZ は compose の environment でコンテナに渡す（unit-01 の日付規定=JST に対応）
 - GitHub Secrets: VPS_SSH_KEY / VPS_HOST / VPS_USER（GHCRはGITHUB_TOKEN）
 
 ## Technical Specification
@@ -50,12 +50,12 @@ infrastructure - This unit will be executed by general-purpose agents with IaC/p
    - job deploy (needs image): SSH で VPS へ → docker compose pull && up -d → https://{domain}/api/health を最大60秒リトライで確認、失敗時はジョブ失敗
    - main への push のみで発火。PR では quality のみ実行する ci.yml を分離
 4. **バックアップ（アライメントゲート確定仕様）**:
-   - `scripts/backup.sh`: `sqlite3 /data/next-call.db ".backup"` → gzip → /srv/next-call/backup/next-call-YYYY-MM-DD.db.gz
+   - `scripts/backup.sh`: **ホスト cron から実行**する。対象は**ホストパス** `/srv/next-call/data/next-call.db`（コンテナ内 /data のbind mount元）。**ホストにインストールした sqlite3 CLI**（`apt install sqlite3`。docs/ops.md のセットアップ手順に追加）で `sqlite3 /srv/next-call/data/next-call.db ".backup"` → gzip → /srv/next-call/backup/next-call-YYYY-MM-DD.db.gz
    - **週次実行**（VPS の cron、例: 日曜 04:00）。**20世代を超えた最古の週次バックアップのみ削除**
    - **ピン留めスナップショット**: `scripts/backup.sh --pin [label]` で /srv/next-call/pinned/next-call-YYYY-MM-DD[-label].db.gz に保存。**ローテーション対象外＝明示的に rm するまで永続保持**
    - リストア手順: `scripts/restore.sh <backup-file>`（app停止→展開→整合性チェック(PRAGMA integrity_check)→配置→app起動）
    - バックアップ検証: backup.sh は作成後に gunzip -t と integrity_check を実行し、失敗時は非ゼロ終了+ログ
-5. **運用ドキュメント**（docs/ops.md）: 初回セットアップ手順（VPS要件、.env、compose 起動、Google OAuth リダイレクトURI設定、cron登録）、デプロイ・ロールバック手順（:sha タグ指定）、バックアップ/ピン留め/リストア手順、ログ確認（docker compose logs）
+5. **運用ドキュメント**（docs/ops.md）: 初回セットアップ手順（VPS要件、.env、compose 起動、Google OAuth リダイレクトURI設定、**ホストへの sqlite3 CLI インストール（`apt install sqlite3`。backup.sh の前提）**、cron登録）、デプロイ・ロールバック手順（:sha タグ指定）、バックアップ/ピン留め/リストア手順、ログ確認（docker compose logs）
 6. **VPS固有値の扱い**: デプロイ先は **Xserver VPS**（ユーザー確定。KVM・root権限・Docker利用可）。OSは Ubuntu LTS を推奨。docs/ops.md に Xserver VPS 固有の手順を含める: 管理パネルの**パケットフィルターで 22/80/443 を開放**、OSイメージ選択、SSH鍵登録。ドメイン名・ホストIPは実装時にユーザーへ確認して設定する。Secrets 未設定時は deploy ジョブをスキップし quality/image のみ通す（フォークやSecrets未設定でもCIが赤くならない）
 
 ## Success Criteria

@@ -124,7 +124,7 @@ key-value ストア。§21の全暫定値（スコア重み・減点強度・集
 
 1. **セッション**: 開始（日付・店舗入力。未登録店舗なら某店/某店以外を初回のみ判定）→ ACTIVE（曲を順次登録、リスナー客トグルはいつでも変更）→ 「次の曲を考える」で選曲支援モードへ何度でも往復 → 終了（ENDED）→ 以後は演奏履歴として集計対象。
 2. **推薦**: 編成条件+意図（前回値引き継ぎ）入力 → パイプライン実行 → 候補提示（+保留曲を無条件で別枠表示）→ コール登録（Performance生成、called_by_me=true）or 保留登録 or 再抽選。
-3. **保留曲**: 登録 → セッションまたぎで保持 → 手動解除（コール時の自動解除は暫定OFF+確認ダイアログ）。
+3. **保留曲**: 登録 → セッションまたぎで保持 → 手動解除、または **called_by_me=true の演奏登録で自動解除**（確認ダイアログなし。ユーザー確定・Domain Model Review Decision 2、Provisional #12）。
 
 ### Data Sources
 
@@ -133,7 +133,7 @@ key-value ストア。§21の全暫定値（スコア重み・減点強度・集
   - Missing: 初期データ（下記）。
 - **iPhoneメモ（セットリスト履歴 約5年分 + 曲マスター元データ）**:
   - Available: 利用者が手動管理してきたテキスト。
-  - Missing: **実データのフォーマットは未入手**（Open Questions）。CSV化はユーザー作業 or 変換支援が必要。
+  - Missing: ~~実データのフォーマットは未入手~~ → **解決済み（2026-07-12）**: 実体は Excel（やれる曲.xlsx）で実データ確認済み。「Excel Source Analysis」参照。初回抽出スクリプトでCSVへ変換する。
 - **PiaScore（季節曲: 春夏秋冬のセットリスト）**:
   - Available: 曲名の一覧（アプリ内で目視可能）。
   - Missing: エクスポートAPIなし。手動転記→曲マスターCSVの season 列に反映する想定（§21未確定 → Provisional）。
@@ -252,6 +252,13 @@ key-value ストア。§21の全暫定値（スコア重み・減点強度・集
 | safety寄与 > 0（右） | 「最近やっていない攻めの一手」 |
 | バラード s≥+1 かつ該当 | 「バラードをやりたい意向に合致」 |
 
+**フォールバック理由（常に生成可能な事実ベーステンプレート）**: 上記のトリガー発火型テンプレートで理由が2件未満になる曲（スライダー全中央・チェックOFF等）のために、無条件で生成できるテンプレートを用意する。**発火した理由が2件未満のときのみ、フォールバックで2件まで補完する**（発火していないルールの理由は捏造しない）:
+
+| トリガー | テンプレート |
+|---|---|
+| 常時（曲属性の事実） | 「黒本キー{key}・{form}構成」 |
+| 常時（履歴集計の事実） | 「この2年で{a}回演奏」 |
+
 ### Stage 9: 条件別候補（§8/§15.2）
 
 horns=UNKNOWN → horns=ONE と horns=MULTI の2ブランチ、beginner=UNKNOWN → beginner=NONE と PRESENT の2ブランチでパイプラインを再実行（Stage 5 の履歴減点は共有）。各ブランチの最上位曲が通常候補と重複しない場合のみ「1管なら」「複数管なら」「初心者が参加するなら」ラベル付きで追加提示。重複する場合は追加しない（§8.1/§15.2）。
@@ -272,14 +279,14 @@ horns=UNKNOWN → horns=ONE と horns=MULTI の2ブランチ、beginner=UNKNOWN 
 | 4 | 管楽器複数時の歌もの | 強い減点 −15（完全除外にしない） | `engine.multi_horn_vocal_penalty = 15` |
 | 5 | 安全性スコアの計算式 | safety_score(0–10) = 2×超定番 + 3×譜面なし対応可 + 2×構成単純 + min(演奏回数,5)×0.4 + min(コール回数,3)×⅓、寄与 = (−s)×1.2×(safety_score−5) | `engine.safety_weights = {...}` |
 | 6 | 盛り上がり度・リスナー向け度の付与方法 | 1–5の整数を手動付与。未設定はデフォルト3。CSVインポート列+マスター一覧インライン編集で整備 | `master.default_level = 3` |
-| 7 | ジャンル上書きのUI | 選曲支援画面の折りたたみ「詳細条件」内にジャンルチップ（複数選択、OR条件の**フィルタ**）。既定は未選択=指定なし | - |
+| 7 | ジャンル上書きのUI | 選曲支援画面の折りたたみ「詳細条件」内にジャンルチップ（複数選択）。指定ジャンル該当曲へ**強い加点**（#15参照）。**フィルタではない**。既定は未選択=指定なし | - |
 | 8 | 候補集団の作り方 | 最高点から10点以内 かつ スコア30以上。不足時はバンドを15点へ一度だけ拡大 | `engine.pool_band = 10` / `engine.pool_band_relaxed = 15` / `engine.score_floor = 30` |
 | 9 | ランダム抽出の重み | softmax: exp((score−max)/τ)、τ=5 | `engine.random_temperature = 5` |
 | 10 | 推薦履歴による減点期間 | 前回提示 −12 / 直近5回(30日) −6 / 同条件3回以上 追加−6。候補<8で半減 | `engine.repeat_penalties = {...}` / `engine.repeat_window_days = 30` / `engine.relax_pool_threshold = 8` |
 | 11 | 通常候補の表示数 | 3曲（設定で1–5） | `engine.candidate_count = 3` |
 | 12 | 保留曲コール時の自動解除 | **自動で解除する**（ユーザー確定・ドメインモデルレビュー） | `pending.auto_release_on_call = true` |
 | 15 | ジャンル上書きの加点値（ユーザー確定: フィルタでなく強い加点） | 指定ジャンル該当曲に +15。指定ジャンルの低頻度減点は無効化 | `engine.genre_override_bonus = 15` |
-| 16 | §12.5 直前曲ヴォーカル後の歌もの減点 | 直前Performanceのフロント編成に vo が含まれる場合、歌もの属性の曲に −15（フロント編成未入力時はスキップ） | `engine.after_vocal_vocal_penalty = -15` |
+| 16 | §12.5 直前曲ヴォーカル後の歌もの減点 | 直前Performanceのフロント編成に vo が含まれる場合、歌もの属性の曲に −15（フロント編成未入力時はスキップ） | `engine.after_vocal_vocal_penalty = 15`（正値。他の減点キーと同じく減点として適用） |
 | 13 | 季節曲のPiaScore移行 | エクスポート手段がないため、春夏秋冬セットリストの曲名を手動転記し、曲マスターCSVの season 列で投入 | - |
 | 14 | 低頻度ジャンルを候補に戻す条件 | 低頻度判定: 自分のコール比率<5%。当該曲の意図由来プラス寄与合計 ≥ +10、またはジャンル上書き指定時に減点免除 | `engine.low_freq_threshold = 0.05` / `engine.low_freq_penalty = 8` / `engine.low_freq_waiver_bonus = 10` |
 
@@ -299,6 +306,8 @@ horns=UNKNOWN → horns=ONE と horns=MULTI の2ブランチ、beginner=UNKNOWN 
 | 1曲目の季節チェック初期値 | ON（§9.7の案を採用） | `engine.first_song_seasonal_default = true` |
 
 ## Tech Stack & Architecture
+
+※本節は初期案。実装構成はユニット仕様（Route Handlers による API 層・`src/engine/`・`/sessions/[id]/recommend` 等）が優先する。乖離がある場合はユニット仕様（unit-01〜09）に従うこと。
 
 ### 構成一覧
 
@@ -399,7 +408,7 @@ on: push(main)
 
 ## Data Import Plan
 
-初期データ: 曲マスター（数百曲）+ セットリスト履歴（約5年分、iPhoneメモ由来）。**実データのフォーマットは未入手**（Open Questions #1）のため、以下のCSV仕様をアプリ側の受け口として定義し、ユーザーのメモ→CSV変換は別途支援する。
+初期データ: 曲マスター（数百曲）+ セットリスト履歴（約5年分）。~~実データのフォーマットは未入手~~ → **解決済み（2026-07-12）**: 実体は Excel（やれる曲.xlsx、list 733曲・logs_all 2,293行。「Excel Source Analysis」参照）で確認済み。以下のCSV仕様をアプリ側の受け口として定義し、Excel→CSV変換は初回抽出スクリプト（unit-08）が行う。
 
 ### 曲マスターCSV（songs.csv）
 
@@ -520,7 +529,7 @@ date,venue_name,order,title,participated,instrument,called_by_me,no_chart,memo
 
 - 全スライダー5段階（−2..+2）、前回値を初期表示（§9）。中央=何もしない
 - Seasonal: 現在の季節を括弧内に自動表示（利用者は季節を選ばない §9.7）。セッション1曲目はデフォルトON
-- Genre override: 折りたたみを開くとジャンルチップ（7種: ボサノバ/3拍子/モード/ファンク/ブルース/歌もの/循環。バラードは独立スライダーのため除外 §10.2）。複数選択=ORフィルタ
+- Genre override: 折りたたみを開くとジャンルチップ（7種: ボサノバ/3拍子/モード/ファンク/ブルース/歌もの/循環。バラードは独立スライダーのため除外 §10.2）。複数選択=OR条件の**強い加点**（フィルタではない。Provisional #15）
 - Get candidates: 推薦実行 → 結果画面へ（同一画面下部への差込みでも可）
 
 ### Data Mapping
@@ -563,7 +572,7 @@ date,venue_name,order,title,participated,instrument,called_by_me,no_chart,memo
 - 各候補: 推薦理由を複数行表示（固定テンプレート §15.1）。Call this → Performance 作成（called_by_me=ON, instrument 既定 sax）→ 記録画面へ戻る。Hold → PendingSong 登録（カードに PENDING バッジ）
 - Re-roll: 同条件で重み付き再抽選（RecommendationRequest は新規保存 → 繰り返し減点が効く）
 - 候補が3未満のとき: 「条件に合う曲が少ないため n 曲のみ表示」と明示（§14.5）
-- 保留曲: 無条件で全件表示。除外条件該当時は警告バッジ（played today / same form / not in Kurobon1 / hard for this formation）。Call 時に「保留を解除しますか？」確認（Provisional #12）
+- 保留曲: 無条件で全件表示。除外条件該当時は警告バッジ（played today / same form / not in Kurobon1 / hard for this formation）。Call 時（called_by_me=true の演奏登録）に**自動解除**される（確認ダイアログなし。Provisional #12）
 
 ### Data Mapping
 
@@ -639,14 +648,14 @@ quality_gates:
 
 ## Open Questions
 
-1. **iPhoneメモの実データフォーマット未入手**: セットリスト履歴・曲マスターの現物サンプルの提供が必要。CSV変換は誰が/どう行うか（変換スクリプト支援の要否）。
+1. **iPhoneメモの実データフォーマット未入手**: → **解決済み（2026-07-12）**: 実体は Excel（やれる曲.xlsx）で実データ確認済み。変換は初回限定の抽出スクリプト（unit-08）が行う。「Excel Source Analysis」参照。
 2. **某店の実店舗名と表記揺れ**: 自動判定（`home_venue_names` 照合）の初期値として実名が必要。
 3. **PiaScore季節セットリストの移行**: 手動転記（CSV season 列）でよいか。曲数の目安は。
-4. **保留曲コール時の自動解除**: 暫定「自動解除せず確認ダイアログ」でよいか（§21）。
+4. **保留曲コール時の自動解除**: → **解決済み: called_by_me=true の演奏登録で自動解除（確認ダイアログなし）で確定**（Domain Model Review Decision 2、Provisional #12）。
 5. **listener_level / energy_level の初期付与**: デフォルト3で開始し段階整備、で運用上問題ないか。CSVに含めて一括投入するか。
 6. **「ヴォーカル参加曲の後は歌ものを避ける」(§12.5)**: 演奏記録に「ヴォーカル参加」フラグを追加するか、直前曲の歌もの属性による連続回避（§12.3）で代替してよいか（暫定: 代替）。
 7. **累計コール回数上位10曲（§12.7）の集計期間**: 全期間でよいか（暫定: 全期間）。
-8. **ジャンル上書きの意味**: 「フィルタ（絞り込み）」でよいか、「強い加点」にすべきか（暫定: フィルタ）。
+8. **ジャンル上書きの意味**: 「フィルタ（絞り込み）」でよいか、「強い加点」にすべきか。→ **解決済み: 強い加点で確定**（Domain Model Review Decision 3、Provisional #15）。
 9. **推薦履歴の「同じような条件」判定粒度**: 暫定 = horns + beginner + kurobon1_only + genre_override + 各スライダーの符号（−/0/+）のシグネチャ一致。これで十分か。
 10. **VPS環境の詳細**: OS、既存リバースプロキシ（Nginx等）の有無、ドメイン名、GHCR利用可否（Docker Hub代替の要否）、バックアップ先。
 11. **Googleログインの許可メールアドレス**: `ALLOWED_EMAILS` に設定する実アドレス（複数端末・複数アカウントの想定有無）。
