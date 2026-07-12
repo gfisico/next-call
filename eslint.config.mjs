@@ -19,7 +19,21 @@ const eslintConfig = [
       "next-env.d.ts",
       "node_modules/**",
       "data/**",
+      "coverage/**",
     ],
+  },
+  {
+    rules: {
+      // 先頭 _ の引数・変数は「意図的に未使用」の慣習として許可する
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
+    },
   },
 ];
 
