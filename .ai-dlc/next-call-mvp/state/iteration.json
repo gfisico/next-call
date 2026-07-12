@@ -7,7 +7,8 @@
     "builder",
     "reviewer"
   ],
-  "status": "active",
+  "status": "completed",
   "targetUnit": "",
-  "currentUnit": "unit-09-infra-deploy"
+  "currentUnit": "unit-09-infra-deploy",
+  "integratorComplete": true
 }
