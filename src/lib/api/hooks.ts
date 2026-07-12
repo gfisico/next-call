@@ -8,20 +8,27 @@ import { useEffect, useState } from "react";
 import useSWR from "swr";
 import {
   ApiClientError,
+  buildSongsQuery,
   fetchActiveSession,
+  fetchGenreTags,
   fetchInstruments,
   fetchRecommendationDefaults,
   fetchSession,
   fetchSessions,
   fetchVenues,
+  getSettings,
+  listSongs,
   searchSongs,
 } from "./client";
 import type {
+  GenreTag,
   Instrument,
   RecommendationDefaults,
   SessionDetail,
   SessionSummary,
+  SettingsMap,
   Song,
+  SongListQuery,
   Venue,
 } from "./types";
 
@@ -31,7 +38,11 @@ export const SWR_KEYS = {
   sessions: "/api/sessions",
   venues: "/api/venues",
   instruments: "/api/instruments",
+  settings: "/api/settings",
+  genreTags: "/api/genre-tags",
   session: (id: number) => `/api/sessions/${id}`,
+  /** 曲一覧はクエリごとにキーを分ける（フィルタ変更で再取得） */
+  songs: (query: SongListQuery = {}) => `/api/songs${buildSongsQuery(query)}`,
   recommendationDefaults: (id: number) =>
     `/api/sessions/${id}/recommendations/defaults`,
 } as const;
@@ -86,11 +97,49 @@ export function useRecommendationDefaults(sessionId: number | null) {
 }
 
 export function useInstruments() {
-  const { data, error, isLoading } = useSWR<Instrument[]>(
+  const { data, error, isLoading, mutate } = useSWR<Instrument[]>(
     SWR_KEYS.instruments,
     fetchInstruments,
   );
-  return { instruments: data ?? [], error, isLoading };
+  return { instruments: data ?? [], error, isLoading, mutate };
+}
+
+/**
+ * 曲マスター一覧（検索 q + サーバ側フィルタ）。
+ * クエリを直列化した文字列を key にし、フィルタ変更で自動再取得する。
+ * keepPreviousData で検索中のちらつきを防ぐ。
+ */
+export function useSongs(query: SongListQuery = {}) {
+  const { data, error, isLoading, isValidating, mutate } = useSWR<Song[]>(
+    SWR_KEYS.songs(query),
+    () => listSongs(query),
+    { keepPreviousData: true },
+  );
+  return {
+    songs: data ?? [],
+    error,
+    isLoading,
+    isValidating,
+    mutate,
+  };
+}
+
+/** 全設定（engine.* ほか）。ミューテーション後は mutate で再検証 */
+export function useSettings() {
+  const { data, error, isLoading, mutate } = useSWR<SettingsMap>(
+    SWR_KEYS.settings,
+    getSettings,
+  );
+  return { settings: data ?? null, error, isLoading, mutate };
+}
+
+/** ジャンル・特徴タグ（固定9種） */
+export function useGenreTags() {
+  const { data, error, isLoading } = useSWR<GenreTag[]>(
+    SWR_KEYS.genreTags,
+    fetchGenreTags,
+  );
+  return { genreTags: data ?? [], error, isLoading };
 }
 
 /**
