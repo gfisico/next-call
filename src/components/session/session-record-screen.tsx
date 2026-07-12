@@ -253,7 +253,7 @@ export function SessionRecordScreen({
             <Button
               type="button"
               className="h-10 w-full"
-              onClick={() => router.push("/suggest")}
+              onClick={() => router.push(`/sessions/${session.id}/recommend`)}
             >
               次の曲を考える
             </Button>
