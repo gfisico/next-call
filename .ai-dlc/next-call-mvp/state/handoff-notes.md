@@ -24,3 +24,8 @@
 - 「次の曲を考える」は /suggest へ遷移（現状 PlaceholderCard。unit-06 が差し替える）
 - テスト基盤: vitest projects で node/dom 環境分離済み。dom テストは testing-library + tests/setup/dom.ts の Radix polyfill を使用。SWR 採用
 - GET /api/sessions は曲数/isHome を返さないため画面は venues 突合で母店バッジ付与・曲数は非表示（unit-07 以降でAPIに件数追加すれば表示可）
+
+## from unit-08（CSVインポートAPI完成）
+- **unit-07（マスタ設定画面 = インポートウィザードUI）**: インポートAPIが利用可能。4段階: POST /api/import/[type]（songs|setlists、multipart）→ POST /api/import/jobs/[jobId]/resolutions（venue区分 + title解決 match/create_stub/skip）→ GET /api/import/jobs/[jobId]/dry-run（差分サマリ）→ POST /api/import/jobs/[jobId]/commit（recalc_has_played オプション）→ DELETE /api/import/jobs/[jobId]。**ジョブ系は import/jobs/[jobId] 配下**（Next.js動的セグメント制約）。プレビューレスポンスに未知venue一覧・title不一致+近似候補3件が含まれる
+- 抽出スクリプト scripts/extract-excel.ts（CLI・exceljs devDep）。実データはコミットしない
+- normalize-title 共有・ImportJob は export 対象外の使い捨てテーブル
