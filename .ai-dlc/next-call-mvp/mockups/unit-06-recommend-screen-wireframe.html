@@ -69,10 +69,16 @@
   .slider { margin-bottom: 14px; }
   .slider .name { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
   .slider .ends { display: flex; justify-content: space-between; font-size: 10px; color: #999; margin-bottom: 4px; }
-  .slider .track { display: flex; gap: 4px; align-items: center; }
-  .slider .tick { flex: 1; height: 14px; border: 1px solid #ccc; border-radius: 4px; background: #fafafa; }
-  .slider .tick.on { background: #52525b; border-color: #52525b; }
-  .slider .tick.center { background: #eee; }
+  /* Apple(iOS)風スライダー: 細いレール+中央からのティント+白い円形ノブ+5段階ドット */
+  .slider .track { position: relative; height: 30px; margin: 2px 10px; }
+  .slider .rail { position: absolute; top: 13px; left: 0; right: 0; height: 4px; border-radius: 2px; background: #e4e4e7; }
+  .slider .fill { position: absolute; top: 13px; height: 4px; border-radius: 2px; background: #007aff; }
+  .slider .dots { position: absolute; top: 13px; left: 0; right: 0; height: 4px; }
+  .slider .dots i { position: absolute; top: -1px; width: 6px; height: 6px; border-radius: 50%; background: #d4d4d8; transform: translateX(-3px); }
+  .slider .dots i:nth-child(1){left:0%} .slider .dots i:nth-child(2){left:25%} .slider .dots i:nth-child(3){left:50%} .slider .dots i:nth-child(4){left:75%} .slider .dots i:nth-child(5){left:100%}
+  .slider .thumb { position: absolute; top: 2px; width: 26px; height: 26px; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.25), 0 0 0 .5px rgba(0,0,0,.06); transform: translateX(-13px); }
+  .slider .track.p0 .thumb{left:0%} .slider .track.p1 .thumb{left:25%} .slider .track.p2 .thumb{left:50%} .slider .track.p3 .thumb{left:75%} .slider .track.p4 .thumb{left:100%}
+  .slider .track.p0 .fill{left:0;width:50%} .slider .track.p1 .fill{left:25%;width:25%} .slider .track.p2 .fill{width:0} .slider .track.p3 .fill{left:50%;width:25%} .slider .track.p4 .fill{left:50%;width:50%}
 
   /* === BADGES === */
   .badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 2px 8px; font-size: 10px; font-weight: 600; border: 1px solid; white-space: nowrap; }
@@ -142,29 +148,29 @@
       <div class="slider">
         <div class="name">珍しい曲</div>
         <div class="ends"><span>強い減点</span><span>強い加点</span></div>
-        <div class="track"><span class="tick"></span><span class="tick"></span><span class="tick center on"></span><span class="tick"></span><span class="tick"></span></div>
+        <div class="track p2"><span class="rail"></span><span class="dots"><i></i><i></i><i></i><i></i><i></i></span><span class="fill"></span><span class="thumb"></span></div>
       </div>
       <div class="slider">
         <div class="name">久しぶりの曲</div>
         <div class="ends"><span>強い減点</span><span>強い加点</span></div>
-        <div class="track"><span class="tick"></span><span class="tick"></span><span class="tick center"></span><span class="tick on"></span><span class="tick"></span></div>
+        <div class="track p3"><span class="rail"></span><span class="dots"><i></i><i></i><i></i><i></i><i></i></span><span class="fill"></span><span class="thumb"></span></div>
       </div>
       <div class="slider">
         <div class="name">攻め方</div>
         <div class="ends"><span>安全に行く</span><span>攻める</span></div>
-        <div class="track"><span class="tick"></span><span class="tick on"></span><span class="tick center"></span><span class="tick"></span><span class="tick"></span></div>
+        <div class="track p1"><span class="rail"></span><span class="dots"><i></i><i></i><i></i><i></i><i></i></span><span class="fill"></span><span class="thumb"></span></div>
       </div>
       <div class="slider">
         <div class="name">場の温度</div>
         <div class="ends"><span>落ち着かせる</span><span>盛り上げる</span></div>
-        <div class="track"><span class="tick"></span><span class="tick"></span><span class="tick center on"></span><span class="tick"></span><span class="tick"></span></div>
+        <div class="track p2"><span class="rail"></span><span class="dots"><i></i><i></i><i></i><i></i><i></i></span><span class="fill"></span><span class="thumb"></span></div>
       </div>
       <div class="slider">
         <div class="name">バラード</div>
         <div class="ends"><span>避けたい</span><span>やりたい</span></div>
-        <div class="track"><span class="tick"></span><span class="tick"></span><span class="tick center on"></span><span class="tick"></span><span class="tick"></span></div>
+        <div class="track p2"><span class="rail"></span><span class="dots"><i></i><i></i><i></i><i></i><i></i></span><span class="fill"></span><span class="thumb"></span></div>
       </div>
-      <div class="copy-note">^ Copy: スライダー名（「攻め方」「場の温度」）は要プロダクトレビュー（仕様は左右ラベルのみ規定）</div>
+      <div class="copy-note">^ Copy: スライダー名（「攻め方」「場の温度」）は要プロダクトレビュー（仕様は左右ラベルのみ規定）。スライダーはApple(iOS)風＝細レール+青ティント+白丸ノブ+5段階スナップ（ユーザー指定）</div>
       <div class="check"><span class="box"></span> 季節感（夏の曲を重視）</div>
       <div class="check"><span class="box"></span> リスナー受けを重視</div>
       <div class="help">季節ラベルはセッション日付から自動表示（利用者は季節を選ばない・仕様§9.7）。リスナー客なしのセッションでも無効化はせず既定OFF。</div>
@@ -202,7 +208,7 @@
       <div class="slider">
         <div class="name">珍しい曲</div>
         <div class="ends"><span>強い減点</span><span>強い加点</span></div>
-        <div class="track"><span class="tick"></span><span class="tick"></span><span class="tick center on"></span><span class="tick"></span><span class="tick"></span></div>
+        <div class="track p2"><span class="rail"></span><span class="dots"><i></i><i></i><i></i><i></i><i></i></span><span class="fill"></span><span class="thumb"></span></div>
       </div>
       <div style="border:2px dashed #ddd; border-radius:12px; height:110px; display:flex; align-items:center; justify-content:center; color:#bbb; font-size:12px; margin-bottom:10px;">…（残りスライダー4本は Screen 1 と同じ）</div>
       <div class="check"><span class="box on">✓</span> 季節感（夏の曲を重視）<span class="badge badge-info" style="margin-left:4px;">推奨</span></div>
