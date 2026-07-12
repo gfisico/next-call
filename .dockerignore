@@ -1,0 +1,37 @@
+# Docker ビルドコンテキストから除外する（ビルド高速化・秘匿情報漏洩防止）。
+# .next/standalone は Dockerfile 内で builder ステージがビルドして生成するため、
+# ホストの .next はコンテキストに含めない。
+
+# 依存・ビルド生成物（コンテナ内で再ビルドする）
+node_modules
+.next
+out
+build
+coverage
+
+# バージョン管理 / AI-DLC 作業ツリー（機密・巨大）
+.git
+.gitignore
+.ai-dlc
+
+# 環境変数・秘匿情報（イメージへ焼き込まない。実行時に env_file で注入）
+.env
+.env.*
+!.env.example
+
+# ローカル SQLite（本番は volume /data）
+data
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# エディタ / OS ノイズ
+.DS_Store
+*.pem
+*.tsbuildinfo
+npm-debug.log*
+
+# インフラ資材そのもの（イメージ内に不要）
+docs
+README.md

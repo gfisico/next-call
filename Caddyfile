@@ -1,0 +1,20 @@
+# next-call リバースプロキシ + 自動 TLS（Let's Encrypt）。
+# ドメインと ACME 連絡先は compose の environment 経由で注入する
+# （APP_DOMAIN / ACME_EMAIL は .env で定義）。
+
+{
+	# ACME 登録に使うメールアドレス。証明書の期限通知等に使われる。
+	email {$ACME_EMAIL}
+}
+
+{$APP_DOMAIN} {
+	# app サービスへリバースプロキシ。compose ネットワーク内の名前解決。
+	reverse_proxy app:3000
+
+	# 圧縮とアクセスログ（docker compose logs caddy で確認可能）。
+	encode zstd gzip
+	log {
+		output stdout
+		format console
+	}
+}
