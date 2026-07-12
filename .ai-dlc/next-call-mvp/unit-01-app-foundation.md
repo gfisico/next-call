@@ -1,6 +1,6 @@
 ---
-status: pending
-last_updated: ""
+status: in_progress
+last_updated: "2026-07-12T09:25:12Z"
 depends_on: []
 branch: ai-dlc/next-call-mvp/01-app-foundation
 discipline: backend
