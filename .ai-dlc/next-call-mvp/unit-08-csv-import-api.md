@@ -22,7 +22,7 @@ operations:
   runbooks: []
   rollback: "取込は単一トランザクション。失敗時は自動ロールバック、成功後の取り消しはバックアップ/エクスポートから復旧"
   scaling: "単一ユーザー。スケーリング不要"
-hat: builder
+hat: reviewer
 ---
 
 # unit-08-csv-import-api
