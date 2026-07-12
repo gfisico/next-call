@@ -1,0 +1,13 @@
+{
+  "iteration": 2,
+  "hat": "builder",
+  "workflowName": "default",
+  "workflow": [
+    "planner",
+    "builder",
+    "reviewer"
+  ],
+  "status": "active",
+  "targetUnit": "",
+  "currentUnit": "unit-01-app-foundation"
+}
