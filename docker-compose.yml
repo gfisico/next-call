@@ -1,15 +1,17 @@
-# next-call 本番 compose（Xserver VPS 上で運用）。
+# next-call 本番 compose（共有 VPS・既存 nginx 統合方式）。
 #
-# app   : GHCR のイメージを pull して起動。SQLite は /srv/next-call/data に永続化。
-# caddy : 80/443 を受けて {$APP_DOMAIN} を app:3000 へリバースプロキシ。TLS 自動発行。
+# app : GHCR のイメージを pull して起動。SQLite は /srv/next-call/data に永続化。
+#       app のみを 127.0.0.1:3003 に公開し、ホストの nginx が next-call.kamiya.to を
+#       この localhost:3003 へリバースプロキシする（TLS は certbot 管理）。
 #
+# 既存の nginx が 80/443 を専有しており、複数サイトを相乗り運用しているため
+# Caddy は使わない（80/443 を奪うと既存サイトを壊す）。詳細は docs/ops.md 参照。
 # 環境変数は .env（.env.deploy.example をコピーして作成）から注入する。
-# デプロイは docs/ops.md 参照（compose pull && up -d）。
 services:
   app:
     # ${APP_IMAGE} 未指定時は GHCR の latest を既定にする。
-    # ロールバック時は APP_IMAGE=ghcr.io/<owner>/next-call:<sha> を指定して up -d。
-    image: ${APP_IMAGE:-ghcr.io/OWNER/next-call:latest}
+    # ロールバック時は APP_IMAGE=ghcr.io/gfisico/next-call:<sha> を指定して up -d。
+    image: ${APP_IMAGE:-ghcr.io/gfisico/next-call:latest}
     restart: unless-stopped
     env_file:
       - .env
@@ -20,9 +22,11 @@ services:
       DATABASE_PATH: /data/next-call.db
     volumes:
       # ホストの実 DB ディレクトリ。backup.sh はこのホストパスを対象にする。
+      # 初回のみホスト側を chown 1000:1000（コンテナの node ユーザー）にすること。
       - /srv/next-call/data:/data
-    expose:
-      - "3000"
+    ports:
+      # localhost のみに公開（外部には出さない。ホストの nginx が受ける）。
+      - "127.0.0.1:3003:3000"
     healthcheck:
       # slim に curl/wget が無いため node で /api/health を叩く（Dockerfile と同方針）。
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
@@ -30,25 +34,3 @@ services:
       timeout: 5s
       retries: 3
       start_period: 20s
-
-  caddy:
-    image: caddy:2
-    restart: unless-stopped
-    depends_on:
-      - app
-    ports:
-      - "80:80"
-      - "443:443"
-    environment:
-      # Caddyfile が参照するドメイン / ACME 連絡先。.env で定義する。
-      APP_DOMAIN: ${APP_DOMAIN}
-      ACME_EMAIL: ${ACME_EMAIL}
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      # 発行済み証明書と設定を永続化（再起動で再取得しない＝レート制限回避）。
-      - caddy_data:/data
-      - caddy_config:/config
-
-volumes:
-  caddy_data:
-  caddy_config:
