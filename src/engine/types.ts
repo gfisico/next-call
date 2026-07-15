@@ -68,6 +68,7 @@ export interface EngineSong {
   hasPlayed: boolean;
   noChartOk: boolean | null;
   isStandard: boolean | null;
+  /** @deprecated difficulty へ移行中。エンジン型としては当面残置 */
   simpleForm: boolean | null;
   inKurobon1: boolean | null;
   season: SongSeason | null;
@@ -75,6 +76,8 @@ export interface EngineSong {
   listenerLevel: number | null;
   /** 盛り上がり度 1–5。未設定 null は中立（3 相当）扱い */
   energyLevel: number | null;
+  /** 難易度 1–5（simple_form の後継）。未設定 null は中立扱い */
+  difficulty: number | null;
   needsReview: boolean;
   /** ジャンル名集合（ALL_GENRES のサブセット） */
   genres: string[];
