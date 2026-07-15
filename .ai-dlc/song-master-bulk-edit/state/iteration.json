@@ -1,1 +1,1 @@
-{"iteration":1,"hat":"planner","workflowName":"default","workflow":["planner","builder","reviewer"],"status":"active","targetUnit":"","currentUnit":"unit-01-difficulty-attribute"}
+{"iteration":1,"hat":"planner","workflowName":"default","workflow":["planner","builder","reviewer"],"status":"completed","targetUnit":"","currentUnit":"unit-01-difficulty-attribute","integratorComplete":true}
