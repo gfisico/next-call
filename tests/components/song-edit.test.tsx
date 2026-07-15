@@ -1,4 +1,4 @@
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -42,6 +42,7 @@ const song = (
   season: "ALL",
   listenerLevel: 3,
   energyLevel: 3,
+  difficulty: null,
   needsReview: false,
   note: null,
   createdAt: "2026-01-01T00:00:00.000Z",
@@ -153,5 +154,87 @@ describe("SongEditScreen (unit-07)", () => {
     );
 
     await waitFor(() => expect(push).toHaveBeenCalledWith("/songs/4"));
+  });
+
+  it("difficulty を持つ曲で「演奏難易度」の該当 radio が選択済み表示 (unit-04)", async () => {
+    const songWithDiff = song(3, "Confirmation", {
+      needsReview: true,
+      difficulty: 4,
+    });
+    const route: RouteHandler = ({ path, method }) => {
+      if (path === "/api/songs" && method === "GET") {
+        return { status: 200, body: { songs: [songWithDiff, S4, S1] } };
+      }
+      return {
+        status: 404,
+        body: { error: { code: "NOT_FOUND", message: "x" } },
+      };
+    };
+    installFetch(route);
+    renderWithSWR(<SongEditScreen songId={3} />);
+
+    await screen.findByDisplayValue("Confirmation");
+    const group = screen.getByRole("radiogroup", { name: "演奏難易度" });
+    expect(
+      within(group).getByRole("radio", { name: "4" }),
+    ).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("演奏難易度を変更して保存すると PATCH body に difficulty が入る (unit-04)", async () => {
+    const user = userEvent.setup();
+    const fetchMock = installFetch(makeRoute());
+    renderWithSWR(<SongEditScreen songId={3} />);
+
+    await screen.findByDisplayValue("Confirmation");
+    const group = screen.getByRole("radiogroup", { name: "演奏難易度" });
+    await user.click(within(group).getByRole("radio", { name: "2" }));
+    await user.click(screen.getByRole("button", { name: "保存" }));
+
+    await waitFor(() =>
+      expect(bodyOf(fetchMock, "PATCH", "/api/songs/3")).toBeTruthy(),
+    );
+    const b = bodyOf(fetchMock, "PATCH", "/api/songs/3") as {
+      difficulty: number | null;
+    };
+    expect(b.difficulty).toBe(2);
+  });
+
+  it("演奏難易度を「未設定」にして保存すると difficulty:null を送る (unit-04)", async () => {
+    const user = userEvent.setup();
+    const fetchMock = installFetch(makeRoute());
+    renderWithSWR(<SongEditScreen songId={3} />);
+
+    await screen.findByDisplayValue("Confirmation");
+    const group = screen.getByRole("radiogroup", { name: "演奏難易度" });
+    await user.click(within(group).getByRole("radio", { name: "3" }));
+    await user.click(within(group).getByRole("radio", { name: "未設定" }));
+    await user.click(screen.getByRole("button", { name: "保存" }));
+
+    await waitFor(() =>
+      expect(bodyOf(fetchMock, "PATCH", "/api/songs/3")).toBeTruthy(),
+    );
+    const b = bodyOf(fetchMock, "PATCH", "/api/songs/3") as {
+      difficulty: number | null;
+    };
+    expect(b.difficulty).toBeNull();
+  });
+
+  it("「構成が単純」チェックボックスが存在せず PATCH body に simpleForm を含まない (unit-04)", async () => {
+    const user = userEvent.setup();
+    const fetchMock = installFetch(makeRoute());
+    renderWithSWR(<SongEditScreen songId={3} />);
+
+    await screen.findByDisplayValue("Confirmation");
+    expect(screen.queryByLabelText("構成が単純")).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "保存" }));
+    await waitFor(() =>
+      expect(bodyOf(fetchMock, "PATCH", "/api/songs/3")).toBeTruthy(),
+    );
+    const b = bodyOf(fetchMock, "PATCH", "/api/songs/3") as Record<
+      string,
+      unknown
+    >;
+    expect(b).not.toHaveProperty("simpleForm");
   });
 });
