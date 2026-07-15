@@ -1,5 +1,5 @@
 ---
-status: pending
+status: in_progress
 last_updated: ""
 depends_on: [unit-01-difficulty-attribute]
 branch: ai-dlc/song-master-bulk-edit/04-edit-screen-difficulty
