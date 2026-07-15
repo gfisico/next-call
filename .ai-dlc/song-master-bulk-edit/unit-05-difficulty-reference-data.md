@@ -1,5 +1,5 @@
 ---
-status: in_progress
+status: completed
 last_updated: ""
 depends_on: []
 branch: ai-dlc/song-master-bulk-edit/05-difficulty-reference-data
