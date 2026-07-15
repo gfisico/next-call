@@ -13,6 +13,8 @@ import path from "node:path";
 import ExcelJS from "exceljs";
 import { INSTRUMENT_SEEDS } from "../src/db/seed";
 import { normalizeTitle } from "../src/lib/normalize-title";
+// `@/` エイリアスは CLI（tsx）では解決されないため相対 import 必須。
+import { SONGS_CSV_HEADERS } from "../src/server/validation/import-headers";
 
 const KNOWN_INSTRUMENT_CODES = new Set(INSTRUMENT_SEEDS.map((s) => s.code));
 
@@ -197,22 +199,8 @@ function csvRow(fields: string[]): string {
   return fields.map(csvField).join(",");
 }
 
-const SONGS_HEADER = [
-  "title",
-  "key",
-  "form",
-  "composer",
-  "has_played",
-  "no_chart_ok",
-  "is_standard",
-  "simple_form",
-  "in_kurobon1",
-  "season",
-  "listener_level",
-  "energy_level",
-  "genres",
-  "note",
-];
+// songs.csv の列定義は API と共有（difficulty 列を含む／旧・簡易フォーム列は撤去済み）。
+const SONGS_HEADER: string[] = [...SONGS_CSV_HEADERS];
 
 const SETLISTS_HEADER = [
   "date",
@@ -421,7 +409,7 @@ function extractSongs(
         hasPlayed,
         noChartOk,
         "0", // is_standard 既定
-        "0", // simple_form 既定
+        "", // difficulty 既定（未設定 = null）
         inKurobon1,
         "通年", // season 既定
         "3", // listener_level 既定

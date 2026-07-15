@@ -12,37 +12,11 @@ import { GENRE_TAG_NAMES } from "@/db/seed";
 /** 行数上限（超過は 400。5,000 行程度を想定しつつ暴発を防ぐ） */
 export const MAX_ROWS = 20000;
 
-/** songs.csv の必須ヘッダ（順不同・過不足はプレビュー側で 400 判定） */
-export const SONGS_CSV_HEADERS = [
-  "title",
-  "key",
-  "form",
-  "composer",
-  "has_played",
-  "no_chart_ok",
-  "is_standard",
-  "simple_form",
-  "in_kurobon1",
-  "season",
-  "listener_level",
-  "energy_level",
-  "genres",
-  "note",
-] as const;
-
-/** setlists.csv の必須ヘッダ（front_instruments は Excel 抽出が付与する追加列） */
-export const SETLISTS_CSV_HEADERS = [
-  "date",
-  "venue_name",
-  "order",
-  "title",
-  "participated",
-  "instrument",
-  "called_by_me",
-  "no_chart",
-  "memo",
-  "front_instruments",
-] as const;
+// CSV 必須ヘッダは CLI（tsx）と共有するため純定数モジュールに集約し再エクスポートする。
+export {
+  SONGS_CSV_HEADERS,
+  SETLISTS_CSV_HEADERS,
+} from "./import-headers";
 
 /** 生 CSV セル → trim 済み文字列（欠損セルは空文字に正規化） */
 const cell = z.preprocess(
@@ -102,6 +76,20 @@ function levelCsv(label: string) {
     return n;
   });
 }
+
+/** difficulty: 1–5、空は null（未設定）。範囲外・非整数はエラー */
+const difficultyCsv = cell.transform((v, ctx) => {
+  if (v === "") return null;
+  const n = Number(v);
+  if (!Number.isInteger(n) || n < 1 || n > 5) {
+    ctx.addIssue({
+      code: "custom",
+      message: `difficulty は 1〜5 または空で指定してください（受領: "${v}"）`,
+    });
+    return z.NEVER;
+  }
+  return n;
+});
 
 const FORM_VALUES = ["AABA", "ABAC", "BLUES12", "OTHER"] as const;
 
@@ -217,7 +205,7 @@ export const songsCsvRowSchema = z
     has_played: csvBoolean("has_played"),
     no_chart_ok: csvBoolean("no_chart_ok"),
     is_standard: csvBoolean("is_standard"),
-    simple_form: csvBoolean("simple_form"),
+    difficulty: difficultyCsv,
     in_kurobon1: csvBoolean("in_kurobon1"),
     season: seasonCsv,
     listener_level: levelCsv("listener_level"),
@@ -233,7 +221,7 @@ export const songsCsvRowSchema = z
     hasPlayed: r.has_played,
     noChartOk: r.no_chart_ok,
     isStandard: r.is_standard,
-    simpleForm: r.simple_form,
+    difficulty: r.difficulty,
     inKurobon1: r.in_kurobon1,
     season: r.season,
     listenerLevel: r.listener_level,

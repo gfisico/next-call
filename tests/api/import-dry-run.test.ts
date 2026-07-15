@@ -23,7 +23,7 @@ afterEach(() => {
 const SET_HEADER =
   "date,venue_name,order,title,participated,instrument,called_by_me,no_chart,memo,front_instruments";
 const SONGS_HEADER =
-  "title,key,form,composer,has_played,no_chart_ok,is_standard,simple_form,in_kurobon1,season,listener_level,energy_level,genres,note";
+  "title,key,form,composer,has_played,no_chart_ok,is_standard,difficulty,in_kurobon1,season,listener_level,energy_level,genres,note";
 
 const TABLES = [
   "songs",
@@ -68,8 +68,8 @@ describe("GET /api/import/jobs/:jobId/dry-run", () => {
       csvUploadRequest(
         "/api/import/songs",
         `${SONGS_HEADER}
-New Song A,C,AABA,,0,0,0,0,0,通年,3,3,,
-New Song B,F,OTHER,,0,0,0,0,0,通年,3,3,歌もの,`,
+New Song A,C,AABA,,0,0,0,,0,通年,3,3,,
+New Song B,F,OTHER,,0,0,0,,0,通年,3,3,歌もの,`,
       ),
       routeParams({ type: "songs" }),
     );
