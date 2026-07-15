@@ -4,7 +4,7 @@
  * score = BASE(50) + Σスライダー寄与 + Σチェック寄与 + ジャンル上書き加点 − Σルール減点
  */
 import { describe, expect, it } from "vitest";
-import { scoreSong } from "@/engine/score";
+import { safetyScore, scoreSong } from "@/engine/score";
 import { SPECIAL_CONSECUTIVE_GENRES } from "@/engine/types";
 import type { EngineInput, EngineSong } from "@/engine/types";
 import {
@@ -114,14 +114,14 @@ describe("§9.4 スライダー: 安全性（(−s) × 1.2 × (safety_score − 
     id: 1,
     isStandard: true,
     noChartOk: true,
-    simpleForm: true,
+    difficulty: 1,
   });
   const safestStats = makeStats({ myPlayCount: 5, myCallCount: 3 });
-  const riskiest = makeSong({ id: 1 }); // 全フラグ false
+  const riskiest = makeSong({ id: 1 }); // 全フラグ false・difficulty=null（中立）
   const riskiestStats = makeStats({ myPlayCount: 0, myCallCount: 0 });
 
   it("s=−2（安全側）× safety_score=10 → +12", () => {
-    // safety_score = 2+3+2 + 5×0.4 + 3×(1/3) = 10
+    // safety_score = 2+3+(3−1)×1 + 5×0.4 + 3×(1/3) = 10
     expect(
       score(safest, { stats: { 1: safestStats }, intent: makeIntent({ safety: -2 }) }),
     ).toBeCloseTo(62, 5);
@@ -166,6 +166,41 @@ describe("§9.4 スライダー: 安全性（(−s) × 1.2 × (safety_score − 
       intent: makeIntent({ safety: -2 }),
     });
     expect(a).toBeCloseTo(b, 5);
+  });
+});
+
+describe("§9.4 safety_score の difficulty 寄与（(3 − difficulty) × 1・null は中立）", () => {
+  const zeroStats = makeStats({ myPlayCount: 0, myCallCount: 0 });
+  const diffScore = (difficulty: number | null) =>
+    safetyScore(makeSong({ id: 1, difficulty }), zeroStats);
+
+  it("difficulty=1 → +2", () => {
+    expect(diffScore(1)).toBeCloseTo(2, 5);
+  });
+
+  it("difficulty=3（midpoint）→ 0", () => {
+    expect(diffScore(3)).toBeCloseTo(0, 5);
+  });
+
+  it("difficulty=5 → −2", () => {
+    expect(diffScore(5)).toBeCloseTo(-2, 5);
+  });
+
+  it("difficulty=null（未設定）→ 中立 0", () => {
+    expect(diffScore(null)).toBeCloseTo(0, 5);
+  });
+
+  it("回帰: simpleForm は safety_score に影響しない（difficulty 同一なら simpleForm 有無で不変）", () => {
+    const withSimple = safetyScore(
+      makeSong({ id: 1, difficulty: 3, simpleForm: true }),
+      zeroStats,
+    );
+    const withoutSimple = safetyScore(
+      makeSong({ id: 1, difficulty: 3, simpleForm: false }),
+      zeroStats,
+    );
+    expect(withSimple).toBeCloseTo(withoutSimple, 5);
+    expect(withSimple).toBeCloseTo(0, 5);
   });
 });
 
@@ -438,7 +473,7 @@ describe("§12.7 減点: 累計コール回数 上位10曲", () => {
   });
 
   it("beginner=PRESENT では半減 −6（超定番曲が必要になるため緩和）", () => {
-    const safe = makeSong({ id: 1, isStandard: true, noChartOk: true, simpleForm: true });
+    const safe = makeSong({ id: 1, isStandard: true, noChartOk: true, difficulty: 1 });
     const base = score(safe, {
       conditions: makeConditions({ beginner: "PRESENT" }),
     });

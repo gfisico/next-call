@@ -52,7 +52,10 @@ export const songs = sqliteTable(
     isStandard: integer("is_standard", { mode: "boolean" })
       .notNull()
       .default(false),
-    /** 構成が単純（仕様§7.1） */
+    /**
+     * 構成が単純（仕様§7.1）
+     * @deprecated difficulty へ移行中。DB列は保持、型・検証からは順次撤去
+     */
     simpleForm: integer("simple_form", { mode: "boolean" })
       .notNull()
       .default(false),
@@ -70,6 +73,8 @@ export const songs = sqliteTable(
     listenerLevel: integer("listener_level").notNull().default(3),
     /** 盛り上がり度 1–5（仕様§7.1。既定3） */
     energyLevel: integer("energy_level").notNull().default(3),
+    /** 難易度 1–5（simple_form の後継。nullable = 未設定。既定値なし） */
+    difficulty: integer("difficulty"),
     /** 属性未整備フラグ（セッション中クイック登録の曲。Alignment Gate 決定事項） */
     needsReview: integer("needs_review", { mode: "boolean" })
       .notNull()

@@ -110,18 +110,20 @@ describe("§15.1 発火型テンプレート", () => {
   });
 
   it("beginner=PRESENT（通過曲）には BEGINNER_FRIENDLY「…初心者…」が付く", () => {
-    const song = makeSong({ id: 1, isStandard: true, noChartOk: true, simpleForm: true });
+    const song = makeSong({ id: 1, isStandard: true, noChartOk: true, difficulty: 1 });
     const input = makeInput({
       songs: [song],
       conditions: { horns: "ONE", beginner: "PRESENT", kurobon1Only: false, genreOverride: [] },
     });
     const reasons = generateReasons(song, input, config);
     expect(codes(reasons)).toContain("BEGINNER_FRIENDLY");
-    expect(reasons.find((r) => r.code === "BEGINNER_FRIENDLY")!.text).toMatch(/初心者/);
+    const beginnerText = reasons.find((r) => r.code === "BEGINNER_FRIENDLY")!.text;
+    expect(beginnerText).toMatch(/初心者/);
+    expect(beginnerText).not.toMatch(/構成/);
   });
 
   it("safety 左（s<0）で寄与 > 0 なら SAFETY_SAFE「…手堅い」が付く", () => {
-    const song = makeSong({ id: 1, isStandard: true, noChartOk: true, simpleForm: true });
+    const song = makeSong({ id: 1, isStandard: true, noChartOk: true, difficulty: 1 });
     const input = makeInput({
       songs: [song],
       stats: { 1: makeStats({ myPlayCount: 5, myCallCount: 3 }) },
@@ -217,7 +219,7 @@ describe("件数の上限・下限", () => {
       listenerLevel: 5,
       isStandard: true,
       noChartOk: true,
-      simpleForm: true,
+      difficulty: 1,
     });
     const input = makeInput({
       songs: [song],

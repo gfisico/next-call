@@ -86,11 +86,14 @@ export interface Song {
   hasPlayed: boolean;
   noChartOk: boolean;
   isStandard: boolean;
+  /** @deprecated difficulty へ移行中。読み取り契約としては当面残置 */
   simpleForm: boolean;
   inKurobon1: boolean;
   season: Season;
   listenerLevel: number;
   energyLevel: number;
+  /** 難易度 1–5（simple_form の後継）。未設定は null */
+  difficulty: number | null;
   needsReview: boolean;
   note: string | null;
   createdAt: string;
@@ -261,11 +264,14 @@ export interface SongAttributes {
   hasPlayed: boolean;
   noChartOk: boolean;
   isStandard: boolean;
+  /** @deprecated difficulty へ移行中。読み取り契約としては当面残置 */
   simpleForm: boolean;
   inKurobon1: boolean;
   season: Season;
   listenerLevel: number;
   energyLevel: number;
+  /** 難易度 1–5（simple_form の後継）。未設定は null */
+  difficulty: number | null;
   needsReview: boolean;
   note: string | null;
   genreTags: string[];

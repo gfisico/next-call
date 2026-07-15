@@ -113,7 +113,7 @@ export function generateReasons(
   if (conditions.beginner === "PRESENT" && isBeginnerFriendly(song)) {
     fired.push({
       code: "BEGINNER_FRIENDLY",
-      text: "超定番・譜面なし対応可・構成が単純で初心者向き",
+      text: "難易度が低く初心者向き",
     });
   }
 

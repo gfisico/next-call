@@ -47,12 +47,16 @@ export function oldMetric(
   return Math.min(daysSinceLastPlayed / config.appearanceWindowDays, 1.0);
 }
 
-/** 安全性スコア（§9.4 / Provisional #5）: 0–10 */
+/**
+ * 安全性スコア（§9.4 / Provisional #5）: 0–10
+ * 難易度は simple_form を廃し difficulty ベース: (midpoint − difficulty) × w_diff
+ * （midpoint=3, w_diff=1 → 1:+2, 2:+1, 3:0, 4:−1, 5:−2）。difficulty=null は中立（寄与 0）。
+ */
 export function safetyScore(song: EngineSong, stats: SongStats): number {
   return (
     (song.isStandard === true ? 2 : 0) +
     (song.noChartOk === true ? 3 : 0) +
-    (song.simpleForm === true ? 2 : 0) +
+    (song.difficulty !== null ? (3 - song.difficulty) * 1 : 0) +
     Math.min(stats.myPlayCount, 5) * 0.4 +
     Math.min(stats.myCallCount, 3) * (1 / 3)
   );

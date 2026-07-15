@@ -50,11 +50,11 @@ interface FormState {
   hasPlayed: boolean;
   noChartOk: boolean;
   isStandard: boolean;
-  simpleForm: boolean;
   inKurobon1: boolean;
   season: Season;
   listenerLevel: number;
   energyLevel: number;
+  difficulty: number | null;
   genreTags: Genre[];
   note: string;
 }
@@ -67,11 +67,11 @@ const DEFAULT_FORM: FormState = {
   hasPlayed: false,
   noChartOk: false,
   isStandard: false,
-  simpleForm: false,
   inKurobon1: false,
   season: "ALL",
   listenerLevel: 3,
   energyLevel: 3,
+  difficulty: null,
   genreTags: [],
   note: "",
 };
@@ -85,11 +85,11 @@ function fromSong(song: Song): FormState {
     hasPlayed: song.hasPlayed,
     noChartOk: song.noChartOk,
     isStandard: song.isStandard,
-    simpleForm: song.simpleForm,
     inKurobon1: song.inKurobon1,
     season: song.season,
     listenerLevel: song.listenerLevel,
     energyLevel: song.energyLevel,
+    difficulty: song.difficulty,
     genreTags: song.genreTags as Genre[],
     note: song.note ?? "",
   };
@@ -101,7 +101,6 @@ const CHECKS: ReadonlyArray<{ key: keyof FormState; label: string }> = [
   { key: "hasPlayed", label: "演奏経験あり（コール可能）" },
   { key: "noChartOk", label: "譜面なし対応可" },
   { key: "isStandard", label: "超定番" },
-  { key: "simpleForm", label: "構成が単純" },
   { key: "inKurobon1", label: "黒本1曲載" },
 ];
 
@@ -168,11 +167,11 @@ export function SongEditScreen({ songId }: SongEditScreenProps) {
       hasPlayed: formState.hasPlayed,
       noChartOk: formState.noChartOk,
       isStandard: formState.isStandard,
-      simpleForm: formState.simpleForm,
       inKurobon1: formState.inKurobon1,
       season: formState.season,
       listenerLevel: formState.listenerLevel,
       energyLevel: formState.energyLevel,
+      difficulty: formState.difficulty,
       genreTags: formState.genreTags,
       note: trimmedNote === "" ? null : trimmedNote,
       // 「属性入力完了」チェック時は needs_review を解除
@@ -399,6 +398,20 @@ export function SongEditScreen({ songId }: SongEditScreenProps) {
           value={String(formState.energyLevel)}
           onChange={(v) => set("energyLevel", Number(v))}
           options={LEVELS.map((n) => ({ value: n, label: n }))}
+        />
+      </div>
+
+      {/* 演奏難易度 */}
+      <div className="grid gap-2">
+        <span className="text-sm font-medium">演奏難易度</span>
+        <Segment
+          ariaLabel="演奏難易度"
+          value={formState.difficulty === null ? "" : String(formState.difficulty)}
+          onChange={(v) => set("difficulty", v === "" ? null : Number(v))}
+          options={[
+            { value: "", label: "未設定" },
+            ...LEVELS.map((n) => ({ value: n, label: n })),
+          ]}
         />
       </div>
 

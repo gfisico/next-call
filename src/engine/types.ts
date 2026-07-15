@@ -68,6 +68,7 @@ export interface EngineSong {
   hasPlayed: boolean;
   noChartOk: boolean | null;
   isStandard: boolean | null;
+  /** @deprecated difficulty へ移行中。エンジン型としては当面残置 */
   simpleForm: boolean | null;
   inKurobon1: boolean | null;
   season: SongSeason | null;
@@ -75,6 +76,8 @@ export interface EngineSong {
   listenerLevel: number | null;
   /** 盛り上がり度 1–5。未設定 null は中立（3 相当）扱い */
   energyLevel: number | null;
+  /** 難易度 1–5（simple_form の後継）。未設定 null は中立扱い */
+  difficulty: number | null;
   needsReview: boolean;
   /** ジャンル名集合（ALL_GENRES のサブセット） */
   genres: string[];
@@ -261,7 +264,7 @@ export type ReasonCode =
   | "MOOD_MATCH" // 「今回の『{...}』に合う」（mood寄与 > 0）
   | "LISTENER_FRIENDLY" // 「リスナーが楽しみやすい曲」（listener ON かつ level ≥ 4）
   | "SEASON_MATCH" // 「いまの季節（{季節}）の曲」（seasonal ON かつ一致）
-  | "BEGINNER_FRIENDLY" // 「超定番・譜面なし対応可・構成が単純で初心者向き」
+  | "BEGINNER_FRIENDLY" // 「難易度が低く初心者向き」（difficulty ≤ 2）
   | "SAFETY_SAFE" // 「演奏経験・譜面なし対応ありで手堅い」（safety寄与 > 0・左）
   | "SAFETY_CHALLENGE" // 「最近やっていない攻めの一手」（safety寄与 > 0・右）
   | "BALLAD_MATCH" // 「バラードをやりたい意向に合致」（s ≥ +1 かつ該当）
