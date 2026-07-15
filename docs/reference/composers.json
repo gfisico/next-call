@@ -1,0 +1,1742 @@
+[
+  {
+    "title": "101 Eastbound",
+    "title_normalized": "101 eastbound",
+    "composer": "Nathan East",
+    "confidence": "medium"
+  },
+  {
+    "title": "Air On The G String (G線上のアリア)",
+    "title_normalized": "air on the g string (g線上のアリア)",
+    "composer": "Johann Sebastian Bach",
+    "confidence": "high"
+  },
+  {
+    "title": "Amazing Grace",
+    "title_normalized": "amazing grace",
+    "composer": "Traditional",
+    "confidence": "high"
+  },
+  {
+    "title": "Annie Laurie",
+    "title_normalized": "annie laurie",
+    "composer": "Alicia Scott",
+    "confidence": "medium"
+  },
+  {
+    "title": "At Last",
+    "title_normalized": "at last",
+    "composer": "Harry Warren",
+    "confidence": "high"
+  },
+  {
+    "title": "Auld Lang Syne",
+    "title_normalized": "auld lang syne",
+    "composer": "Traditional",
+    "confidence": "high"
+  },
+  {
+    "title": "Aura Lee",
+    "title_normalized": "aura lee",
+    "composer": "George R. Poulton",
+    "confidence": "high"
+  },
+  {
+    "title": "Baby Elephant Walk (子象の行進)",
+    "title_normalized": "baby elephant walk (子象の行進)",
+    "composer": "Henry Mancini",
+    "confidence": "high"
+  },
+  {
+    "title": "Batucada",
+    "title_normalized": "batucada",
+    "composer": "Marcos Valle",
+    "confidence": "medium"
+  },
+  {
+    "title": "Between The Sheets",
+    "title_normalized": "between the sheets",
+    "composer": "The Isley Brothers, Chris Jasper",
+    "confidence": "medium"
+  },
+  {
+    "title": "Big Nick",
+    "title_normalized": "big nick",
+    "composer": "John Coltrane",
+    "confidence": "high"
+  },
+  {
+    "title": "Black Magic Woman ~ Gypsy Queen",
+    "title_normalized": "black magic woman ~ gypsy queen",
+    "composer": "Peter Green, Gábor Szabó",
+    "confidence": "high"
+  },
+  {
+    "title": "Blues For Alice",
+    "title_normalized": "blues for alice",
+    "composer": "Charlie Parker",
+    "confidence": "high"
+  },
+  {
+    "title": "Bouncing With Bud",
+    "title_normalized": "bouncing with bud",
+    "composer": "Bud Powell",
+    "confidence": "high"
+  },
+  {
+    "title": "Brazil",
+    "title_normalized": "brazil",
+    "composer": "Ary Barroso",
+    "confidence": "high"
+  },
+  {
+    "title": "Breakout",
+    "title_normalized": "breakout",
+    "composer": "Andy Connell, Corinne Drewery, Martin Jackson",
+    "confidence": "medium"
+  },
+  {
+    "title": "Bright Size Life",
+    "title_normalized": "bright size life",
+    "composer": "Pat Metheny",
+    "confidence": "high"
+  },
+  {
+    "title": "Brown Sugar",
+    "title_normalized": "brown sugar",
+    "composer": "Mick Jagger, Keith Richards",
+    "confidence": "high"
+  },
+  {
+    "title": "Bye-Ya",
+    "title_normalized": "bye-ya",
+    "composer": "Thelonious Monk",
+    "confidence": "high"
+  },
+  {
+    "title": "California, Here I Come",
+    "title_normalized": "california, here i come",
+    "composer": "Joseph Meyer",
+    "confidence": "high"
+  },
+  {
+    "title": "Calling You",
+    "title_normalized": "calling you",
+    "composer": "Bob Telson",
+    "confidence": "high"
+  },
+  {
+    "title": "Can’t Help Falling In Love",
+    "title_normalized": "can’t help falling in love",
+    "composer": "George David Weiss, Hugo Peretti, Luigi Creatore",
+    "confidence": "high"
+  },
+  {
+    "title": "Can’t Take My Eyes Off Of You",
+    "title_normalized": "can’t take my eyes off of you",
+    "composer": "Bob Gaudio",
+    "confidence": "high"
+  },
+  {
+    "title": "Cat, The",
+    "title_normalized": "cat, the",
+    "composer": "Lalo Schifrin",
+    "confidence": "high"
+  },
+  {
+    "title": "Central Park West",
+    "title_normalized": "central park west",
+    "composer": "John Coltrane",
+    "confidence": "high"
+  },
+  {
+    "title": "Chameleon",
+    "title_normalized": "chameleon",
+    "composer": "Herbie Hancock",
+    "confidence": "high"
+  },
+  {
+    "title": "Change The World",
+    "title_normalized": "change the world",
+    "composer": "Tommy Sims, Gordon Kennedy, Wayne Kirkpatrick",
+    "confidence": "high"
+  },
+  {
+    "title": "Chasin The Trane",
+    "title_normalized": "chasin the trane",
+    "composer": "John Coltrane",
+    "confidence": "high"
+  },
+  {
+    "title": "Chasing The Bird",
+    "title_normalized": "chasing the bird",
+    "composer": "Charlie Parker",
+    "confidence": "high"
+  },
+  {
+    "title": "Chicago Song",
+    "title_normalized": "chicago song",
+    "composer": "Marcus Miller",
+    "confidence": "high"
+  },
+  {
+    "title": "Cissy Strut",
+    "title_normalized": "cissy strut",
+    "composer": "Art Neville, Leo Nocentelli, George Porter Jr., Joseph Modeliste",
+    "confidence": "high"
+  },
+  {
+    "title": "Close To You",
+    "title_normalized": "close to you",
+    "composer": "Burt Bacharach",
+    "confidence": "high"
+  },
+  {
+    "title": "Cold Duck Time",
+    "title_normalized": "cold duck time",
+    "composer": "Eddie Harris",
+    "confidence": "high"
+  },
+  {
+    "title": "Come Sunday",
+    "title_normalized": "come sunday",
+    "composer": "Duke Ellington",
+    "confidence": "high"
+  },
+  {
+    "title": "Come Together",
+    "title_normalized": "come together",
+    "composer": "John Lennon, Paul McCartney",
+    "confidence": "high"
+  },
+  {
+    "title": "Comin’ Home Baby",
+    "title_normalized": "comin’ home baby",
+    "composer": "Ben Tucker",
+    "confidence": "high"
+  },
+  {
+    "title": "Cotton Fields",
+    "title_normalized": "cotton fields",
+    "composer": "Huddie Ledbetter (Lead Belly)",
+    "confidence": "high"
+  },
+  {
+    "title": "Countdown",
+    "title_normalized": "countdown",
+    "composer": "John Coltrane",
+    "confidence": "high"
+  },
+  {
+    "title": "Cousin Mary",
+    "title_normalized": "cousin mary",
+    "composer": "John Coltrane",
+    "confidence": "high"
+  },
+  {
+    "title": "Danny Boy",
+    "title_normalized": "danny boy",
+    "composer": "Traditional",
+    "confidence": "high"
+  },
+  {
+    "title": "Dark Eyes",
+    "title_normalized": "dark eyes",
+    "composer": "Traditional",
+    "confidence": "medium"
+  },
+  {
+    "title": "Day Dream",
+    "title_normalized": "day dream",
+    "composer": "Billy Strayhorn, Duke Ellington",
+    "confidence": "high"
+  },
+  {
+    "title": "Desperado",
+    "title_normalized": "desperado",
+    "composer": "Don Henley, Glenn Frey",
+    "confidence": "high"
+  },
+  {
+    "title": "Dewey Square",
+    "title_normalized": "dewey square",
+    "composer": "Charlie Parker",
+    "confidence": "high"
+  },
+  {
+    "title": "Dexterity",
+    "title_normalized": "dexterity",
+    "composer": "Charlie Parker",
+    "confidence": "high"
+  },
+  {
+    "title": "Dock Of The Bay (Sittin’ On), The",
+    "title_normalized": "dock of the bay (sittin’ on), the",
+    "composer": "Otis Redding, Steve Cropper",
+    "confidence": "high"
+  },
+  {
+    "title": "Don’t Get Around Much Anymore",
+    "title_normalized": "don’t get around much anymore",
+    "composer": "Duke Ellington",
+    "confidence": "high"
+  },
+  {
+    "title": "Don’t It Make My Brown Eyes Blue",
+    "title_normalized": "don’t it make my brown eyes blue",
+    "composer": "Richard Leigh",
+    "confidence": "high"
+  },
+  {
+    "title": "Don’t Know Why",
+    "title_normalized": "don’t know why",
+    "composer": "Jesse Harris",
+    "confidence": "high"
+  },
+  {
+    "title": "Don’t You Worry ’Bout A Thing",
+    "title_normalized": "don’t you worry ’bout a thing",
+    "composer": "Stevie Wonder",
+    "confidence": "high"
+  },
+  {
+    "title": "Duke, The",
+    "title_normalized": "duke, the",
+    "composer": "Dave Brubeck",
+    "confidence": "high"
+  },
+  {
+    "title": "E.S.P",
+    "title_normalized": "e.s.p",
+    "composer": "Wayne Shorter",
+    "confidence": "high"
+  },
+  {
+    "title": "Easy To Love",
+    "title_normalized": "easy to love",
+    "composer": "Cole Porter",
+    "confidence": "high"
+  },
+  {
+    "title": "Eiderdown",
+    "title_normalized": "eiderdown",
+    "composer": "Steve Swallow",
+    "confidence": "high"
+  },
+  {
+    "title": "Eighty One",
+    "title_normalized": "eighty one",
+    "composer": "Ron Carter, Miles Davis",
+    "confidence": "high"
+  },
+  {
+    "title": "El Condor Pasa",
+    "title_normalized": "el condor pasa",
+    "composer": "Daniel Alomía Robles",
+    "confidence": "high"
+  },
+  {
+    "title": "El Gaucho",
+    "title_normalized": "el gaucho",
+    "composer": "Wayne Shorter",
+    "confidence": "high"
+  },
+  {
+    "title": "End Of A Love Affair, The",
+    "title_normalized": "end of a love affair, the",
+    "composer": "Edward Redding",
+    "confidence": "high"
+  },
+  {
+    "title": "Englishman in New York",
+    "title_normalized": "englishman in new york",
+    "composer": "Sting",
+    "confidence": "high"
+  },
+  {
+    "title": "Entertainer, The",
+    "title_normalized": "entertainer, the",
+    "composer": "Scott Joplin",
+    "confidence": "high"
+  },
+  {
+    "title": "Epistrophy",
+    "title_normalized": "epistrophy",
+    "composer": "Thelonious Monk, Kenny Clarke",
+    "confidence": "high"
+  },
+  {
+    "title": "Equinox",
+    "title_normalized": "equinox",
+    "composer": "John Coltrane",
+    "confidence": "high"
+  },
+  {
+    "title": "Eronel",
+    "title_normalized": "eronel",
+    "composer": "Thelonious Monk",
+    "confidence": "high"
+  },
+  {
+    "title": "Europa (Earth’s Cry, Heaven’s Smile)",
+    "title_normalized": "europa (earth’s cry, heaven’s smile)",
+    "composer": "Carlos Santana, Tom Coster",
+    "confidence": "high"
+  },
+  {
+    "title": "Ev’ry Time We Say Goodbye",
+    "title_normalized": "ev’ry time we say goodbye",
+    "composer": "Cole Porter",
+    "confidence": "high"
+  },
+  {
+    "title": "Eye Of The Hurricane",
+    "title_normalized": "eye of the hurricane",
+    "composer": "Herbie Hancock",
+    "confidence": "high"
+  },
+  {
+    "title": "Farmer’s Trust",
+    "title_normalized": "farmer’s trust",
+    "composer": "Pat Metheny",
+    "confidence": "high"
+  },
+  {
+    "title": "Fee-Fi-Fo-Fum",
+    "title_normalized": "fee-fi-fo-fum",
+    "composer": "Wayne Shorter",
+    "confidence": "high"
+  },
+  {
+    "title": "Firm Roots",
+    "title_normalized": "firm roots",
+    "composer": "Cedar Walton",
+    "confidence": "high"
+  },
+  {
+    "title": "First Song (For Ruth)",
+    "title_normalized": "first song (for ruth)",
+    "composer": "Charlie Haden",
+    "confidence": "high"
+  },
+  {
+    "title": "Five Hundred Miles High",
+    "title_normalized": "five hundred miles high",
+    "composer": "Chick Corea",
+    "confidence": "high"
+  },
+  {
+    "title": "Five Pennies, The",
+    "title_normalized": "five pennies, the",
+    "composer": "Sylvia Fine",
+    "confidence": "high"
+  },
+  {
+    "title": "Flamingo",
+    "title_normalized": "flamingo",
+    "composer": "Ted Grouya",
+    "confidence": "high"
+  },
+  {
+    "title": "Flight Of The Bumblebee",
+    "title_normalized": "flight of the bumblebee",
+    "composer": "Nikolai Rimsky-Korsakov",
+    "confidence": "high"
+  },
+  {
+    "title": "For All We Know",
+    "title_normalized": "for all we know",
+    "composer": "J. Fred Coots",
+    "confidence": "high"
+  },
+  {
+    "title": "For Once In My Life",
+    "title_normalized": "for once in my life",
+    "composer": "Orlando Murden",
+    "confidence": "high"
+  },
+  {
+    "title": "Four Brothers",
+    "title_normalized": "four brothers",
+    "composer": "Jimmy Giuffre",
+    "confidence": "high"
+  },
+  {
+    "title": "Freedom Jazz Dance",
+    "title_normalized": "freedom jazz dance",
+    "composer": "Eddie Harris",
+    "confidence": "high"
+  },
+  {
+    "title": "Friday The 13th",
+    "title_normalized": "friday the 13th",
+    "composer": "Thelonious Monk",
+    "confidence": "high"
+  },
+  {
+    "title": "Gee Baby Ain’t I Good To You",
+    "title_normalized": "gee baby ain’t i good to you",
+    "composer": "Don Redman",
+    "confidence": "high"
+  },
+  {
+    "title": "Georgy Porgy",
+    "title_normalized": "georgy porgy",
+    "composer": "David Paich",
+    "confidence": "high"
+  },
+  {
+    "title": "Good Morning Heartache",
+    "title_normalized": "good morning heartache",
+    "composer": "Irene Higginbotham",
+    "confidence": "high"
+  },
+  {
+    "title": "Goodnight Sweetheart",
+    "title_normalized": "goodnight sweetheart",
+    "composer": "Ray Noble, Jimmy Campbell, Reg Connelly",
+    "confidence": "high"
+  },
+  {
+    "title": "Got A Match?",
+    "title_normalized": "got a match?",
+    "composer": "Chick Corea",
+    "confidence": "high"
+  },
+  {
+    "title": "Got To Be Real",
+    "title_normalized": "got to be real",
+    "composer": "David Foster, David Paich, Cheryl Lynn",
+    "confidence": "high"
+  },
+  {
+    "title": "Grandfather's Clock",
+    "title_normalized": "grandfather's clock",
+    "composer": "Henry Clay Work",
+    "confidence": "high"
+  },
+  {
+    "title": "Greensleeves",
+    "title_normalized": "greensleeves",
+    "composer": "Traditional",
+    "confidence": "high"
+  },
+  {
+    "title": "Hackensack",
+    "title_normalized": "hackensack",
+    "composer": "Thelonious Monk",
+    "confidence": "high"
+  },
+  {
+    "title": "Half Nelson",
+    "title_normalized": "half nelson",
+    "composer": "Miles Davis",
+    "confidence": "high"
+  },
+  {
+    "title": "Hang Up Your Hangups",
+    "title_normalized": "hang up your hangups",
+    "composer": "Herbie Hancock",
+    "confidence": "high"
+  },
+  {
+    "title": "Happy Birthday To You",
+    "title_normalized": "happy birthday to you",
+    "composer": "Mildred J. Hill, Patty Hill",
+    "confidence": "high"
+  },
+  {
+    "title": "Hottentot",
+    "title_normalized": "hottentot",
+    "composer": "John Scofield",
+    "confidence": "high"
+  },
+  {
+    "title": "I Got It Bad",
+    "title_normalized": "i got it bad",
+    "composer": "Duke Ellington",
+    "confidence": "high"
+  },
+  {
+    "title": "I Got It Bad And That Ain’t Good",
+    "title_normalized": "i got it bad and that ain’t good",
+    "composer": "Duke Ellington",
+    "confidence": "high"
+  },
+  {
+    "title": "I Hear Music",
+    "title_normalized": "i hear music",
+    "composer": "Burton Lane",
+    "confidence": "high"
+  },
+  {
+    "title": "I Let A Song Go Out Of My Heart",
+    "title_normalized": "i let a song go out of my heart",
+    "composer": "Duke Ellington",
+    "confidence": "high"
+  },
+  {
+    "title": "I Only Have Eyes For You",
+    "title_normalized": "i only have eyes for you",
+    "composer": "Harry Warren",
+    "confidence": "high"
+  },
+  {
+    "title": "I Say A Little Prayer",
+    "title_normalized": "i say a little prayer",
+    "composer": "Burt Bacharach",
+    "confidence": "high"
+  },
+  {
+    "title": "I Want To Talk About You",
+    "title_normalized": "i want to talk about you",
+    "composer": "Billy Eckstine",
+    "confidence": "high"
+  },
+  {
+    "title": "I Will Wait For You",
+    "title_normalized": "i will wait for you",
+    "composer": "Michel Legrand",
+    "confidence": "high"
+  },
+  {
+    "title": "I Wish",
+    "title_normalized": "i wish",
+    "composer": "Stevie Wonder",
+    "confidence": "high"
+  },
+  {
+    "title": "I'll See You In My Dreams",
+    "title_normalized": "i'll see you in my dreams",
+    "composer": "Isham Jones",
+    "confidence": "high"
+  },
+  {
+    "title": "I’m Gettin Sentimental Over You",
+    "title_normalized": "i’m gettin sentimental over you",
+    "composer": "George Bassman",
+    "confidence": "high"
+  },
+  {
+    "title": "I’m In The Mood For Love",
+    "title_normalized": "i’m in the mood for love",
+    "composer": "Jimmy McHugh",
+    "confidence": "high"
+  },
+  {
+    "title": "I’m Walkin’",
+    "title_normalized": "i’m walkin’",
+    "composer": "Fats Domino, Dave Bartholomew",
+    "confidence": "high"
+  },
+  {
+    "title": "I’ve Got The World On A String",
+    "title_normalized": "i’ve got the world on a string",
+    "composer": "Harold Arlen",
+    "confidence": "high"
+  },
+  {
+    "title": "If I Ain't Got You",
+    "title_normalized": "if i ain't got you",
+    "composer": "Alicia Keys",
+    "confidence": "high"
+  },
+  {
+    "title": "Imagination",
+    "title_normalized": "imagination",
+    "composer": "Jimmy Van Heusen",
+    "confidence": "high"
+  },
+  {
+    "title": "In The Still Of The Night",
+    "title_normalized": "in the still of the night",
+    "composer": "Cole Porter",
+    "confidence": "high"
+  },
+  {
+    "title": "In The Wee Small Hours Of The Morning",
+    "title_normalized": "in the wee small hours of the morning",
+    "composer": "David Mann",
+    "confidence": "high"
+  },
+  {
+    "title": "In Walked Bud",
+    "title_normalized": "in walked bud",
+    "composer": "Thelonious Monk",
+    "confidence": "high"
+  },
+  {
+    "title": "Infant Eyes",
+    "title_normalized": "infant eyes",
+    "composer": "Wayne Shorter",
+    "confidence": "high"
+  },
+  {
+    "title": "Isn’t She Lovely",
+    "title_normalized": "isn’t she lovely",
+    "composer": "Stevie Wonder",
+    "confidence": "high"
+  },
+  {
+    "title": "It's A Sin To Tell A Lie",
+    "title_normalized": "it's a sin to tell a lie",
+    "composer": "Billy Mayhew",
+    "confidence": "high"
+  },
+  {
+    "title": "It's Too Late",
+    "title_normalized": "it's too late",
+    "composer": "Carole King",
+    "confidence": "high"
+  },
+  {
+    "title": "Jan Jan",
+    "title_normalized": "jan jan",
+    "composer": "Mose Davis",
+    "confidence": "medium"
+  },
+  {
+    "title": "Jean Pierre",
+    "title_normalized": "jean pierre",
+    "composer": "Miles Davis",
+    "confidence": "high"
+  },
+  {
+    "title": "Jeannine",
+    "title_normalized": "jeannine",
+    "composer": "Duke Pearson",
+    "confidence": "high"
+  },
+  {
+    "title": "Jesus Children Of America",
+    "title_normalized": "jesus children of america",
+    "composer": "Stevie Wonder",
+    "confidence": "high"
+  },
+  {
+    "title": "Just Squeeze Me",
+    "title_normalized": "just squeeze me",
+    "composer": "Duke Ellington",
+    "confidence": "high"
+  },
+  {
+    "title": "Just The Two Of Us",
+    "title_normalized": "just the two of us",
+    "composer": "Ralph MacDonald, William Salter, Bill Withers",
+    "confidence": "high"
+  },
+  {
+    "title": "Just The Way You Are",
+    "title_normalized": "just the way you are",
+    "composer": "Billy Joel",
+    "confidence": "high"
+  },
+  {
+    "title": "Kanon",
+    "title_normalized": "kanon",
+    "composer": "Johann Pachelbel",
+    "confidence": "high"
+  },
+  {
+    "title": "Keep That Same Old Feeling",
+    "title_normalized": "keep that same old feeling",
+    "composer": "Wayne Henderson",
+    "confidence": "medium"
+  },
+  {
+    "title": "La Bamba",
+    "title_normalized": "la bamba",
+    "composer": "Traditional",
+    "confidence": "high"
+  },
+  {
+    "title": "La Fiesta",
+    "title_normalized": "la fiesta",
+    "composer": "Chick Corea",
+    "confidence": "high"
+  },
+  {
+    "title": "Lady Marmalade",
+    "title_normalized": "lady marmalade",
+    "composer": "Bob Crewe, Kenny Nolan",
+    "confidence": "high"
+  },
+  {
+    "title": "Last Tango In Paris",
+    "title_normalized": "last tango in paris",
+    "composer": "Gato Barbieri",
+    "confidence": "high"
+  },
+  {
+    "title": "Led Boots",
+    "title_normalized": "led boots",
+    "composer": "Max Middleton",
+    "confidence": "medium"
+  },
+  {
+    "title": "Like Sonny",
+    "title_normalized": "like sonny",
+    "composer": "John Coltrane",
+    "confidence": "high"
+  },
+  {
+    "title": "Litha",
+    "title_normalized": "litha",
+    "composer": "Chick Corea",
+    "confidence": "high"
+  },
+  {
+    "title": "Little Sunflower",
+    "title_normalized": "little sunflower",
+    "composer": "Freddie Hubbard",
+    "confidence": "high"
+  },
+  {
+    "title": "Long Train Runnin'",
+    "title_normalized": "long train runnin'",
+    "composer": "Tom Johnston",
+    "confidence": "high"
+  },
+  {
+    "title": "Lonnies Lament",
+    "title_normalized": "lonnies lament",
+    "composer": "John Coltrane",
+    "confidence": "high"
+  },
+  {
+    "title": "Look Of Love, The",
+    "title_normalized": "look of love, the",
+    "composer": "Burt Bacharach",
+    "confidence": "high"
+  },
+  {
+    "title": "Lotus Blossom",
+    "title_normalized": "lotus blossom",
+    "composer": "Billy Strayhorn",
+    "confidence": "high"
+  },
+  {
+    "title": "Love Is A Many Splendored Things",
+    "title_normalized": "love is a many splendored things",
+    "composer": "Sammy Fain",
+    "confidence": "high"
+  },
+  {
+    "title": "Love Me Tender",
+    "title_normalized": "love me tender",
+    "composer": "Vera Matson, Elvis Presley",
+    "confidence": "medium"
+  },
+  {
+    "title": "Lovin' You",
+    "title_normalized": "lovin' you",
+    "composer": "Minnie Riperton, Richard Rudolph",
+    "confidence": "high"
+  },
+  {
+    "title": "Loving You Was Like A Party",
+    "title_normalized": "loving you was like a party",
+    "composer": "Bernard Ighner",
+    "confidence": "medium"
+  },
+  {
+    "title": "Mambo Inn",
+    "title_normalized": "mambo inn",
+    "composer": "Mario Bauzá, Edgar Sampson",
+    "confidence": "high"
+  },
+  {
+    "title": "Mas Que Nada",
+    "title_normalized": "mas que nada",
+    "composer": "Jorge Ben",
+    "confidence": "high"
+  },
+  {
+    "title": "Mean To Me",
+    "title_normalized": "mean to me",
+    "composer": "Fred E. Ahlert",
+    "confidence": "high"
+  },
+  {
+    "title": "Meaning Of The Blues",
+    "title_normalized": "meaning of the blues",
+    "composer": "Bobby Troup",
+    "confidence": "high"
+  },
+  {
+    "title": "Memories Of You",
+    "title_normalized": "memories of you",
+    "composer": "Eubie Blake",
+    "confidence": "high"
+  },
+  {
+    "title": "Midnight Mood",
+    "title_normalized": "midnight mood",
+    "composer": "Joe Zawinul",
+    "confidence": "high"
+  },
+  {
+    "title": "Misterioso",
+    "title_normalized": "misterioso",
+    "composer": "Thelonious Monk",
+    "confidence": "high"
+  },
+  {
+    "title": "Misty",
+    "title_normalized": "misty",
+    "composer": "Erroll Garner",
+    "confidence": "high"
+  },
+  {
+    "title": "Mona Lisa",
+    "title_normalized": "mona lisa",
+    "composer": "Jay Livingston",
+    "confidence": "high"
+  },
+  {
+    "title": "Monk’s Dream",
+    "title_normalized": "monk’s dream",
+    "composer": "Thelonious Monk",
+    "confidence": "high"
+  },
+  {
+    "title": "Monk’s Mood",
+    "title_normalized": "monk’s mood",
+    "composer": "Thelonious Monk",
+    "confidence": "high"
+  },
+  {
+    "title": "Mood Indigo",
+    "title_normalized": "mood indigo",
+    "composer": "Duke Ellington, Barney Bigard",
+    "confidence": "high"
+  },
+  {
+    "title": "Moonglow",
+    "title_normalized": "moonglow",
+    "composer": "Will Hudson, Irving Mills, Eddie DeLange",
+    "confidence": "high"
+  },
+  {
+    "title": "Moonlight In Vermont",
+    "title_normalized": "moonlight in vermont",
+    "composer": "Karl Suessdorf",
+    "confidence": "high"
+  },
+  {
+    "title": "Moonlight Serenade",
+    "title_normalized": "moonlight serenade",
+    "composer": "Glenn Miller",
+    "confidence": "high"
+  },
+  {
+    "title": "Moose The Mooche",
+    "title_normalized": "moose the mooche",
+    "composer": "Charlie Parker",
+    "confidence": "high"
+  },
+  {
+    "title": "More",
+    "title_normalized": "more",
+    "composer": "Riz Ortolani, Nino Oliviero",
+    "confidence": "high"
+  },
+  {
+    "title": "My Old Flame",
+    "title_normalized": "my old flame",
+    "composer": "Arthur Johnston",
+    "confidence": "high"
+  },
+  {
+    "title": "New York State Of Mind",
+    "title_normalized": "new york state of mind",
+    "composer": "Billy Joel",
+    "confidence": "high"
+  },
+  {
+    "title": "Nightingale Sang In Berkeley Square, A",
+    "title_normalized": "nightingale sang in berkeley square, a",
+    "composer": "Manning Sherwin",
+    "confidence": "high"
+  },
+  {
+    "title": "Nothing Personal",
+    "title_normalized": "nothing personal",
+    "composer": "Don Grolnick",
+    "confidence": "high"
+  },
+  {
+    "title": "O'lman River",
+    "title_normalized": "o'lman river",
+    "composer": "Jerome Kern",
+    "confidence": "high"
+  },
+  {
+    "title": "Off Minor",
+    "title_normalized": "off minor",
+    "composer": "Thelonious Monk",
+    "confidence": "high"
+  },
+  {
+    "title": "Oh Susanna",
+    "title_normalized": "oh susanna",
+    "composer": "Stephen Foster",
+    "confidence": "high"
+  },
+  {
+    "title": "On A Misty Night",
+    "title_normalized": "on a misty night",
+    "composer": "Tadd Dameron",
+    "confidence": "high"
+  },
+  {
+    "title": "On The Street Where You Live",
+    "title_normalized": "on the street where you live",
+    "composer": "Frederick Loewe",
+    "confidence": "high"
+  },
+  {
+    "title": "Once In A While",
+    "title_normalized": "once in a while",
+    "composer": "Michael Edwards",
+    "confidence": "high"
+  },
+  {
+    "title": "One By One",
+    "title_normalized": "one by one",
+    "composer": "Wayne Shorter",
+    "confidence": "high"
+  },
+  {
+    "title": "One Finger Snap",
+    "title_normalized": "one finger snap",
+    "composer": "Herbie Hancock",
+    "confidence": "high"
+  },
+  {
+    "title": "One For Helen",
+    "title_normalized": "one for helen",
+    "composer": "Bill Evans",
+    "confidence": "high"
+  },
+  {
+    "title": "Only You",
+    "title_normalized": "only you",
+    "composer": "Buck Ram",
+    "confidence": "high"
+  },
+  {
+    "title": "Our Spanish Love Song",
+    "title_normalized": "our spanish love song",
+    "composer": "Charlie Haden",
+    "confidence": "high"
+  },
+  {
+    "title": "Oye Como Va",
+    "title_normalized": "oye como va",
+    "composer": "Tito Puente",
+    "confidence": "high"
+  },
+  {
+    "title": "Pannonica",
+    "title_normalized": "pannonica",
+    "composer": "Thelonious Monk",
+    "confidence": "high"
+  },
+  {
+    "title": "Pass The Peas",
+    "title_normalized": "pass the peas",
+    "composer": "James Brown, John Starks, Charles Bobbit",
+    "confidence": "high"
+  },
+  {
+    "title": "Passion Dance",
+    "title_normalized": "passion dance",
+    "composer": "McCoy Tyner",
+    "confidence": "high"
+  },
+  {
+    "title": "Peacocks, The",
+    "title_normalized": "peacocks, the",
+    "composer": "Jimmy Rowles",
+    "confidence": "high"
+  },
+  {
+    "title": "Peri’s Scope",
+    "title_normalized": "peri’s scope",
+    "composer": "Bill Evans",
+    "confidence": "high"
+  },
+  {
+    "title": "Pick Up Pieces",
+    "title_normalized": "pick up pieces",
+    "composer": "Roger Ball, Hamish Stuart",
+    "confidence": "medium"
+  },
+  {
+    "title": "Pinocchio",
+    "title_normalized": "pinocchio",
+    "composer": "Wayne Shorter",
+    "confidence": "high"
+  },
+  {
+    "title": "Play That Funky Music",
+    "title_normalized": "play that funky music",
+    "composer": "Rob Parissi",
+    "confidence": "high"
+  },
+  {
+    "title": "Poinciana",
+    "title_normalized": "poinciana",
+    "composer": "Nat Simon",
+    "confidence": "high"
+  },
+  {
+    "title": "Prince Of Darkness",
+    "title_normalized": "prince of darkness",
+    "composer": "Wayne Shorter",
+    "confidence": "high"
+  },
+  {
+    "title": "Quiet Now",
+    "title_normalized": "quiet now",
+    "composer": "Denny Zeitlin",
+    "confidence": "high"
+  },
+  {
+    "title": "Ramblin’",
+    "title_normalized": "ramblin’",
+    "composer": "Ornette Coleman",
+    "confidence": "high"
+  },
+  {
+    "title": "Red Baron",
+    "title_normalized": "red baron",
+    "composer": "Billy Cobham",
+    "confidence": "high"
+  },
+  {
+    "title": "Red River Valley",
+    "title_normalized": "red river valley",
+    "composer": "Traditional",
+    "confidence": "high"
+  },
+  {
+    "title": "Reflections",
+    "title_normalized": "reflections",
+    "composer": "Thelonious Monk",
+    "confidence": "high"
+  },
+  {
+    "title": "Relaxin’ At Camarillo",
+    "title_normalized": "relaxin’ at camarillo",
+    "composer": "Charlie Parker",
+    "confidence": "high"
+  },
+  {
+    "title": "Rio Funk",
+    "title_normalized": "rio funk",
+    "composer": "Lee Ritenour",
+    "confidence": "high"
+  },
+  {
+    "title": "Road Song",
+    "title_normalized": "road song",
+    "composer": "Wes Montgomery",
+    "confidence": "high"
+  },
+  {
+    "title": "Robin’s Nest",
+    "title_normalized": "robin’s nest",
+    "composer": "Sir Charles Thompson, Illinois Jacquet",
+    "confidence": "high"
+  },
+  {
+    "title": "Rock With You",
+    "title_normalized": "rock with you",
+    "composer": "Rod Temperton",
+    "confidence": "high"
+  },
+  {
+    "title": "Rose, The",
+    "title_normalized": "rose, the",
+    "composer": "Amanda McBroom",
+    "confidence": "high"
+  },
+  {
+    "title": "Saving All My Love For You",
+    "title_normalized": "saving all my love for you",
+    "composer": "Michael Masser",
+    "confidence": "high"
+  },
+  {
+    "title": "Scarborough Fair",
+    "title_normalized": "scarborough fair",
+    "composer": "Traditional",
+    "confidence": "high"
+  },
+  {
+    "title": "Sea Journey",
+    "title_normalized": "sea journey",
+    "composer": "Chick Corea",
+    "confidence": "high"
+  },
+  {
+    "title": "Segment",
+    "title_normalized": "segment",
+    "composer": "Charlie Parker",
+    "confidence": "high"
+  },
+  {
+    "title": "Sentimental Journey",
+    "title_normalized": "sentimental journey",
+    "composer": "Les Brown, Ben Homer",
+    "confidence": "high"
+  },
+  {
+    "title": "September",
+    "title_normalized": "september",
+    "composer": "Maurice White, Al McKay, Allee Willis",
+    "confidence": "high"
+  },
+  {
+    "title": "Shiroi-Nami",
+    "title_normalized": "shiroi-nami",
+    "composer": "Sadao Watanabe",
+    "confidence": "medium"
+  },
+  {
+    "title": "Silent Night",
+    "title_normalized": "silent night",
+    "composer": "Franz Xaver Gruber",
+    "confidence": "high"
+  },
+  {
+    "title": "Sir Duke",
+    "title_normalized": "sir duke",
+    "composer": "Stevie Wonder",
+    "confidence": "high"
+  },
+  {
+    "title": "Sister Sadie",
+    "title_normalized": "sister sadie",
+    "composer": "Horace Silver",
+    "confidence": "high"
+  },
+  {
+    "title": "Smooth Operator",
+    "title_normalized": "smooth operator",
+    "composer": "Sade Adu, Ray St. John",
+    "confidence": "high"
+  },
+  {
+    "title": "So Many Stars",
+    "title_normalized": "so many stars",
+    "composer": "Sergio Mendes",
+    "confidence": "high"
+  },
+  {
+    "title": "So Nice",
+    "title_normalized": "so nice",
+    "composer": "Marcos Valle",
+    "confidence": "high"
+  },
+  {
+    "title": "Solitude",
+    "title_normalized": "solitude",
+    "composer": "Duke Ellington",
+    "confidence": "high"
+  },
+  {
+    "title": "Some Skunk Funk",
+    "title_normalized": "some skunk funk",
+    "composer": "Randy Brecker",
+    "confidence": "high"
+  },
+  {
+    "title": "Sometime Ago",
+    "title_normalized": "sometime ago",
+    "composer": "Sergio Mihanovich",
+    "confidence": "high"
+  },
+  {
+    "title": "Sometimes I Feel Like A Motherless Child",
+    "title_normalized": "sometimes i feel like a motherless child",
+    "composer": "Traditional",
+    "confidence": "high"
+  },
+  {
+    "title": "Sometimes I'm Happy",
+    "title_normalized": "sometimes i'm happy",
+    "composer": "Vincent Youmans",
+    "confidence": "high"
+  },
+  {
+    "title": "Song For Bilbao",
+    "title_normalized": "song for bilbao",
+    "composer": "Pat Metheny",
+    "confidence": "high"
+  },
+  {
+    "title": "Song For You, A",
+    "title_normalized": "song for you, a",
+    "composer": "Leon Russell",
+    "confidence": "high"
+  },
+  {
+    "title": "Soul Eyes",
+    "title_normalized": "soul eyes",
+    "composer": "Mal Waldron",
+    "confidence": "high"
+  },
+  {
+    "title": "Soul Intro ~ The Chicken",
+    "title_normalized": "soul intro ~ the chicken",
+    "composer": "Alfred James Ellis",
+    "confidence": "medium"
+  },
+  {
+    "title": "Soul Trane",
+    "title_normalized": "soul trane",
+    "composer": "Tadd Dameron",
+    "confidence": "medium"
+  },
+  {
+    "title": "Soultrane",
+    "title_normalized": "soultrane",
+    "composer": "Tadd Dameron",
+    "confidence": "medium"
+  },
+  {
+    "title": "Speak No Evil",
+    "title_normalized": "speak no evil",
+    "composer": "Wayne Shorter",
+    "confidence": "high"
+  },
+  {
+    "title": "Stand By Me",
+    "title_normalized": "stand by me",
+    "composer": "Ben E. King, Jerry Leiber, Mike Stoller",
+    "confidence": "high"
+  },
+  {
+    "title": "Strangers In The Night",
+    "title_normalized": "strangers in the night",
+    "composer": "Bert Kaempfert",
+    "confidence": "high"
+  },
+  {
+    "title": "Strasbourg-St.Denis",
+    "title_normalized": "strasbourg-st.denis",
+    "composer": "Roy Hargrove",
+    "confidence": "high"
+  },
+  {
+    "title": "Street Life",
+    "title_normalized": "street life",
+    "composer": "Joe Sample",
+    "confidence": "high"
+  },
+  {
+    "title": "Sugar",
+    "title_normalized": "sugar",
+    "composer": "Stanley Turrentine",
+    "confidence": "high"
+  },
+  {
+    "title": "Summer Knows, The",
+    "title_normalized": "summer knows, the",
+    "composer": "Michel Legrand",
+    "confidence": "high"
+  },
+  {
+    "title": "Summer Night",
+    "title_normalized": "summer night",
+    "composer": "Harry Warren",
+    "confidence": "medium"
+  },
+  {
+    "title": "Summer Samba",
+    "title_normalized": "summer samba",
+    "composer": "Marcos Valle",
+    "confidence": "high"
+  },
+  {
+    "title": "Superstition",
+    "title_normalized": "superstition",
+    "composer": "Stevie Wonder",
+    "confidence": "high"
+  },
+  {
+    "title": "Swanee River",
+    "title_normalized": "swanee river",
+    "composer": "Stephen Foster",
+    "confidence": "high"
+  },
+  {
+    "title": "Syeeda's Song Flute",
+    "title_normalized": "syeeda's song flute",
+    "composer": "John Coltrane",
+    "confidence": "high"
+  },
+  {
+    "title": "Tadd’s Delight",
+    "title_normalized": "tadd’s delight",
+    "composer": "Tadd Dameron",
+    "confidence": "high"
+  },
+  {
+    "title": "Take Me Home, Country Roads",
+    "title_normalized": "take me home, country roads",
+    "composer": "John Denver, Bill Danoff, Taffy Nivert",
+    "confidence": "high"
+  },
+  {
+    "title": "Tangerine",
+    "title_normalized": "tangerine",
+    "composer": "Victor Schertzinger",
+    "confidence": "high"
+  },
+  {
+    "title": "Tee Bag",
+    "title_normalized": "tee bag",
+    "composer": "Mike Mainieri",
+    "confidence": "medium"
+  },
+  {
+    "title": "Teen Town",
+    "title_normalized": "teen town",
+    "composer": "Jaco Pastorius",
+    "confidence": "high"
+  },
+  {
+    "title": "Tennessee Waltz",
+    "title_normalized": "tennessee waltz",
+    "composer": "Pee Wee King, Redd Stewart",
+    "confidence": "high"
+  },
+  {
+    "title": "Tequila",
+    "title_normalized": "tequila",
+    "composer": "Danny Flores",
+    "confidence": "high"
+  },
+  {
+    "title": "Thermo",
+    "title_normalized": "thermo",
+    "composer": "Freddie Hubbard",
+    "confidence": "high"
+  },
+  {
+    "title": "These Foolish Things",
+    "title_normalized": "these foolish things",
+    "composer": "Jack Strachey",
+    "confidence": "high"
+  },
+  {
+    "title": "They Can’t Take That Away From Me",
+    "title_normalized": "they can’t take that away from me",
+    "composer": "George Gershwin",
+    "confidence": "high"
+  },
+  {
+    "title": "They Say It’s Wonderful",
+    "title_normalized": "they say it’s wonderful",
+    "composer": "Irving Berlin",
+    "confidence": "high"
+  },
+  {
+    "title": "Things Ain’t What They Used To Be",
+    "title_normalized": "things ain’t what they used to be",
+    "composer": "Mercer Ellington",
+    "confidence": "high"
+  },
+  {
+    "title": "Think Of One",
+    "title_normalized": "think of one",
+    "composer": "Thelonious Monk",
+    "confidence": "high"
+  },
+  {
+    "title": "This Little Light Of Mine",
+    "title_normalized": "this little light of mine",
+    "composer": "Traditional",
+    "confidence": "medium"
+  },
+  {
+    "title": "This Masquerade",
+    "title_normalized": "this masquerade",
+    "composer": "Leon Russell",
+    "confidence": "high"
+  },
+  {
+    "title": "Three Views Of A Secret",
+    "title_normalized": "three views of a secret",
+    "composer": "Jaco Pastorius",
+    "confidence": "high"
+  },
+  {
+    "title": "Through The Fire",
+    "title_normalized": "through the fire",
+    "composer": "David Foster, Tom Keane, Cynthia Weil",
+    "confidence": "high"
+  },
+  {
+    "title": "Tico Tico",
+    "title_normalized": "tico tico",
+    "composer": "Zequinha de Abreu",
+    "confidence": "high"
+  },
+  {
+    "title": "Time For Love, A",
+    "title_normalized": "time for love, a",
+    "composer": "Johnny Mandel",
+    "confidence": "high"
+  },
+  {
+    "title": "Time Remembered",
+    "title_normalized": "time remembered",
+    "composer": "Bill Evans",
+    "confidence": "high"
+  },
+  {
+    "title": "Too Young",
+    "title_normalized": "too young",
+    "composer": "Sidney Lippman",
+    "confidence": "high"
+  },
+  {
+    "title": "Top Of The World",
+    "title_normalized": "top of the world",
+    "composer": "Richard Carpenter",
+    "confidence": "high"
+  },
+  {
+    "title": "Trav'lin' Light",
+    "title_normalized": "trav'lin' light",
+    "composer": "Jimmy Mundy, Trummy Young",
+    "confidence": "high"
+  },
+  {
+    "title": "Travels",
+    "title_normalized": "travels",
+    "composer": "Pat Metheny",
+    "confidence": "medium"
+  },
+  {
+    "title": "Tristeza",
+    "title_normalized": "tristeza",
+    "composer": "Haroldo Lobo, Niltinho",
+    "confidence": "high"
+  },
+  {
+    "title": "Turnaround",
+    "title_normalized": "turnaround",
+    "composer": "Ornette Coleman",
+    "confidence": "high"
+  },
+  {
+    "title": "Twenty Six Two",
+    "title_normalized": "twenty six two",
+    "composer": "John Coltrane",
+    "confidence": "high"
+  },
+  {
+    "title": "Two Bass Hit",
+    "title_normalized": "two bass hit",
+    "composer": "Dizzy Gillespie, John Lewis",
+    "confidence": "high"
+  },
+  {
+    "title": "Two For The Road",
+    "title_normalized": "two for the road",
+    "composer": "Henry Mancini",
+    "confidence": "high"
+  },
+  {
+    "title": "Unit 7",
+    "title_normalized": "unit 7",
+    "composer": "Sam Jones",
+    "confidence": "high"
+  },
+  {
+    "title": "Upper Manhattan Medical Group",
+    "title_normalized": "upper manhattan medical group",
+    "composer": "Billy Strayhorn",
+    "confidence": "high"
+  },
+  {
+    "title": "Upside Down",
+    "title_normalized": "upside down",
+    "composer": "Bernard Edwards, Nile Rodgers",
+    "confidence": "medium"
+  },
+  {
+    "title": "Valdez in the Country",
+    "title_normalized": "valdez in the country",
+    "composer": "Donny Hathaway",
+    "confidence": "high"
+  },
+  {
+    "title": "Waltz For Ruth",
+    "title_normalized": "waltz for ruth",
+    "composer": "Charlie Haden",
+    "confidence": "high"
+  },
+  {
+    "title": "Watch What Happens",
+    "title_normalized": "watch what happens",
+    "composer": "Michel Legrand",
+    "confidence": "high"
+  },
+  {
+    "title": "Water Is Wide, The",
+    "title_normalized": "water is wide, the",
+    "composer": "Traditional",
+    "confidence": "high"
+  },
+  {
+    "title": "Wayne's Thang",
+    "title_normalized": "wayne's thang",
+    "composer": "Kenny Garrett",
+    "confidence": "high"
+  },
+  {
+    "title": "We Wish You A Merry Christmas",
+    "title_normalized": "we wish you a merry christmas",
+    "composer": "Traditional",
+    "confidence": "high"
+  },
+  {
+    "title": "Weaver Of Dreams, A",
+    "title_normalized": "weaver of dreams, a",
+    "composer": "Victor Young",
+    "confidence": "high"
+  },
+  {
+    "title": "Wedding March, A",
+    "title_normalized": "wedding march, a",
+    "composer": "Felix Mendelssohn",
+    "confidence": "medium"
+  },
+  {
+    "title": "What A Wonderful World",
+    "title_normalized": "what a wonderful world",
+    "composer": "Bob Thiele, George David Weiss",
+    "confidence": "high"
+  },
+  {
+    "title": "What You Won't Do For Love",
+    "title_normalized": "what you won't do for love",
+    "composer": "Bobby Caldwell, Alfons Kettner",
+    "confidence": "high"
+  },
+  {
+    "title": "What's Goin' On",
+    "title_normalized": "what's goin' on",
+    "composer": "Marvin Gaye, Renaldo Benson, Al Cleveland",
+    "confidence": "high"
+  },
+  {
+    "title": "Whatcha Gonna Do For Me",
+    "title_normalized": "whatcha gonna do for me",
+    "composer": "Ned Doheny, Hamish Stuart",
+    "confidence": "high"
+  },
+  {
+    "title": "When Lights Are Low",
+    "title_normalized": "when lights are low",
+    "composer": "Benny Carter",
+    "confidence": "high"
+  },
+  {
+    "title": "When The Saints Go Marching In",
+    "title_normalized": "when the saints go marching in",
+    "composer": "Traditional",
+    "confidence": "high"
+  },
+  {
+    "title": "When You're Smiling",
+    "title_normalized": "when you're smiling",
+    "composer": "Larry Shay, Mark Fisher, Joe Goodwin",
+    "confidence": "high"
+  },
+  {
+    "title": "Where Or When",
+    "title_normalized": "where or when",
+    "composer": "Richard Rodgers",
+    "confidence": "high"
+  },
+  {
+    "title": "Winelight",
+    "title_normalized": "winelight",
+    "composer": "William Eaton",
+    "confidence": "high"
+  },
+  {
+    "title": "Winter Wandeland",
+    "title_normalized": "winter wandeland",
+    "composer": "Felix Bernard",
+    "confidence": "high"
+  },
+  {
+    "title": "Without A Song",
+    "title_normalized": "without a song",
+    "composer": "Vincent Youmans",
+    "confidence": "high"
+  },
+  {
+    "title": "Wonderful Tonight",
+    "title_normalized": "wonderful tonight",
+    "composer": "Eric Clapton",
+    "confidence": "high"
+  },
+  {
+    "title": "Would You Dance With A Stranger",
+    "title_normalized": "would you dance with a stranger",
+    "composer": "Giovanni D'Anzi",
+    "confidence": "medium"
+  },
+  {
+    "title": "Ya Gotta Try",
+    "title_normalized": "ya gotta try",
+    "composer": "Sammy Nestico",
+    "confidence": "high"
+  },
+  {
+    "title": "You Are The Sunshine Of My Life",
+    "title_normalized": "you are the sunshine of my life",
+    "composer": "Stevie Wonder",
+    "confidence": "high"
+  },
+  {
+    "title": "You Are The Universe",
+    "title_normalized": "you are the universe",
+    "composer": "Siedah Garrett, Andrew Levy",
+    "confidence": "medium"
+  },
+  {
+    "title": "You've Changed",
+    "title_normalized": "you've changed",
+    "composer": "Carl Fischer",
+    "confidence": "high"
+  },
+  {
+    "title": "You've Got A Friend",
+    "title_normalized": "you've got a friend",
+    "composer": "Carole King",
+    "confidence": "high"
+  },
+  {
+    "title": "上を向いて歩こう",
+    "title_normalized": "上を向いて歩こう",
+    "composer": "椎名林檎",
+    "confidence": "high"
+  },
+  {
+    "title": "丸ノ内サディスティック",
+    "title_normalized": "丸ノ内サディスティック",
+    "composer": "椎名林檎",
+    "confidence": "high"
+  }
+]
