@@ -39,6 +39,33 @@ interface KurobonRefEntry {
 
 export type KurobonRef = Map<string, KurobonRefEntry>;
 
+/**
+ * 参考列付与「専用」の緩い突合キー。import 同定契約の `normalizeTitle` とは別物で、
+ * 曲名の綴り揺れ（カーリー・アポストロフィ、先頭/末尾の冠詞、記号・空白差）を吸収する。
+ * あくまで advisory な参考列の付与にのみ使用し、CSV の同定キーには使わない。
+ */
+export function looseTitleKey(title: string): string {
+  let x = title
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/[’‘]/g, "'")
+    .replace(/[“”]/g, '"')
+    .trim();
+  x = x.replace(/,\s*(the|a|an)$/, ""); // 末尾冠詞（アプリの "Name, The" 形式）
+  x = x.replace(/^(the|a|an)\s+/, ""); // 先頭冠詞
+  x = x.replace(/[^a-z0-9]+/g, ""); // 記号・空白を除去
+  return x;
+}
+
+/**
+ * アプリ側の表記が参照データと系統的に異なる曲の明示エイリアス。
+ * キー = アプリ曲名（looseTitleKey 適用前）、値 = 参照データの title_normalized。
+ */
+const REF_ALIASES: Record<string, string> = {
+  "Freddie The Freeloader": "freddie freeloader",
+  Recado: "recado bossa nova",
+};
+
 // --- ソース → EditableSong[] --------------------------------------------------
 
 const SEASON_LABEL_TO_CODE: Record<string, SeasonCode> = {
@@ -130,13 +157,87 @@ export function loadKurobonRef(jsonPath: string): KurobonRef {
   }>;
   const map: KurobonRef = new Map();
   for (const e of raw) {
-    map.set(normalizeTitle(e.title_normalized), {
+    const entry: KurobonRefEntry = {
       difficulty_1_5: e.difficulty_1_5 ?? null,
       comment: e.comment ?? "",
       level_9: e.level_9 ?? "",
-    });
+    };
+    map.set(normalizeTitle(e.title_normalized), entry);
+    // 緩いキーも登録（strict を上書きしない）。曲名の綴り揺れを吸収する。
+    const loose = looseTitleKey(e.title_normalized);
+    if (!map.has(loose)) map.set(loose, entry);
+  }
+  // 明示エイリアス（アプリ表記 → 参照データ）を緩いキーで追加登録
+  for (const [appTitle, refNorm] of Object.entries(REF_ALIASES)) {
+    const entry = map.get(normalizeTitle(refNorm));
+    if (!entry) continue;
+    const k = looseTitleKey(appTitle);
+    if (!map.has(k)) map.set(k, entry);
   }
   return map;
+}
+
+/** 曲名で参考データを引く（strict → loose の順）。 */
+export function lookupRef(
+  kurobonRef: KurobonRef,
+  title: string,
+): KurobonRefEntry | undefined {
+  return (
+    kurobonRef.get(normalizeTitle(title)) ??
+    kurobonRef.get(looseTitleKey(title))
+  );
+}
+
+// --- 作曲者オーバーライド -----------------------------------------------------
+
+/**
+ * composers.json（[{ title_normalized|title, composer }]）→ Map<key, composer>。
+ * ファイルが無ければ空 Map（補完なし）。strict＋loose の両キーで登録。
+ */
+export function loadComposerOverrides(jsonPath: string): Map<string, string> {
+  const map = new Map<string, string>();
+  let raw: unknown;
+  try {
+    raw = JSON.parse(readFileSync(jsonPath, "utf8"));
+  } catch {
+    return map; // 未生成でも致命ではない
+  }
+  if (!Array.isArray(raw)) return map;
+  for (const e of raw as Array<Record<string, unknown>>) {
+    const composer = typeof e.composer === "string" ? e.composer.trim() : "";
+    if (composer === "") continue;
+    const t =
+      typeof e.title_normalized === "string"
+        ? e.title_normalized
+        : typeof e.title === "string"
+          ? e.title
+          : "";
+    if (t === "") continue;
+    map.set(normalizeTitle(t), composer);
+    const loose = looseTitleKey(t);
+    if (!map.has(loose)) map.set(loose, composer);
+  }
+  return map;
+}
+
+/** composer が空欄の曲のみオーバーライドで補完。補完した件数を返す。 */
+export function applyComposerOverrides(
+  editable: EditableSong[],
+  overrides: Map<string, string>,
+): number {
+  if (overrides.size === 0) return 0;
+  let n = 0;
+  for (const s of editable) {
+    if (s.composer != null && s.composer.trim() !== "") continue;
+    const c =
+      overrides.get(normalizeTitle(s.title)) ??
+      overrides.get(looseTitleKey(s.title));
+    if (c) {
+      s.composer = c;
+      n++;
+    }
+  }
+  return n;
 }
 
 // --- ワークブック生成（純関数・IO なし） -------------------------------------
@@ -174,7 +275,7 @@ export function buildWorkbook(
 
   for (const song of editable) {
     const display = songToDisplayRow(song);
-    const ref = kurobonRef.get(normalizeTitle(song.title));
+    const ref = lookupRef(kurobonRef, song.title);
     const values = COLUMNS.map((c) => {
       if (c.kind === "reference") {
         if (!ref) return "";
@@ -230,7 +331,7 @@ export function countReferenceMatches(
 ): number {
   let n = 0;
   for (const s of editable) {
-    if (kurobonRef.has(normalizeTitle(s.title))) n++;
+    if (lookupRef(kurobonRef, s.title)) n++;
   }
   return n;
 }
@@ -250,6 +351,8 @@ async function main(): Promise<void> {
   const outPath = argValue(args, "--out") ?? "docs/song-master-edit.xlsx";
   const refPath =
     argValue(args, "--reference") ?? "docs/reference/kurobon1-difficulty.json";
+  const composersPath =
+    argValue(args, "--composers") ?? "docs/reference/composers.json";
 
   let editable: EditableSong[];
   if (source === "db") {
@@ -266,6 +369,9 @@ async function main(): Promise<void> {
     process.exit(1);
     return;
   }
+
+  const composerOverrides = loadComposerOverrides(composersPath);
+  const composerFilled = applyComposerOverrides(editable, composerOverrides);
 
   const kurobonRef = loadKurobonRef(refPath);
   const wb = buildWorkbook(editable, kurobonRef);
@@ -284,6 +390,12 @@ async function main(): Promise<void> {
   const matches = countReferenceMatches(editable, kurobonRef);
   console.log(`[master-export] ${editable.length} 曲 → ${outPath}`);
   console.log(`[master-export] 参考列付与: ${matches} 曲（黒本1突合）`);
+  const blanks = editable.filter(
+    (s) => s.composer == null || s.composer.trim() === "",
+  ).length;
+  console.log(
+    `[master-export] 作曲者補完: ${composerFilled} 曲（残ブランク ${blanks} 曲）`,
+  );
   if (source === "list") {
     console.log(
       "[master-export] 注: list 経路は difficulty=未設定 / season=通年 / level=3 が既定値です（現在値で埋めたい場合は --source db）",
