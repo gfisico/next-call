@@ -86,14 +86,12 @@ describe("§12.1 完全除外: 直前の曲と form が同じ", () => {
   });
 });
 
-describe("§8.2/§12.1 完全除外: 初心者対応（beginner=PRESENT の AND 条件）", () => {
+describe("§8.2/§12.1 完全除外: 初心者対応（beginner=PRESENT は difficulty≤2 のみ通過）", () => {
   const safe = {
-    isStandard: true,
-    noChartOk: true,
-    simpleForm: true,
+    difficulty: 1,
   } as const;
 
-  it("is_standard AND no_chart_ok AND simple_form を満たす曲は除外されない", () => {
+  it("difficulty≤2（低難易度）の曲は除外されない", () => {
     const input = makeInput({
       songs: [makeSong({ id: 1, ...safe })],
       conditions: { horns: "ONE", beginner: "PRESENT", kurobon1Only: false, genreOverride: [] },
@@ -102,25 +100,23 @@ describe("§8.2/§12.1 完全除外: 初心者対応（beginner=PRESENT の AND 
   });
 
   it.each([
-    ["is_standard=false", { ...safe, isStandard: false }],
-    ["no_chart_ok=false", { ...safe, noChartOk: false }],
-    ["simple_form=false", { ...safe, simpleForm: false }],
-  ])("AND 条件を1つでも欠く曲（%s）は除外される", (_label, attrs) => {
+    ["difficulty=3", 3],
+    ["difficulty=5", 5],
+    ["difficulty=null（未設定）", null],
+  ])("難易度が高い/未設定の曲（%s）は除外される", (_label, difficulty) => {
     const input = makeInput({
-      songs: [makeSong({ id: 1, ...attrs })],
+      songs: [makeSong({ id: 1, difficulty })],
       conditions: { horns: "ONE", beginner: "PRESENT", kurobon1Only: false, genreOverride: [] },
     });
     expect(passedIds(input)).toEqual([]);
   });
 
-  it("属性が null（needs_review）の曲は AND を満たさない扱い → 除外される（安全側）", () => {
+  it("difficulty=null（needs_review）の曲は評価不能 → 除外される（安全側）", () => {
     const input = makeInput({
       songs: [
         makeSong({
           id: 1,
-          isStandard: null,
-          noChartOk: null,
-          simpleForm: null,
+          difficulty: null,
           needsReview: true,
         }),
       ],
@@ -129,9 +125,9 @@ describe("§8.2/§12.1 完全除外: 初心者対応（beginner=PRESENT の AND 
     expect(passedIds(input)).toEqual([]);
   });
 
-  it("beginner=NONE なら AND 条件を満たさない曲も除外されない", () => {
+  it("beginner=NONE なら難易度が高い/未設定の曲も除外されない", () => {
     const input = makeInput({
-      songs: [makeSong({ id: 1, isStandard: false })],
+      songs: [makeSong({ id: 1, difficulty: null })],
       conditions: { horns: "ONE", beginner: "NONE", kurobon1Only: false, genreOverride: [] },
     });
     expect(passedIds(input)).toEqual([1]);
@@ -139,7 +135,7 @@ describe("§8.2/§12.1 完全除外: 初心者対応（beginner=PRESENT の AND 
 
   it("beginner=UNKNOWN の通常候補では初心者除外を適用しない", () => {
     const input = makeInput({
-      songs: [makeSong({ id: 1, isStandard: false })],
+      songs: [makeSong({ id: 1, difficulty: null })],
       conditions: { horns: "UNKNOWN", beginner: "UNKNOWN", kurobon1Only: false, genreOverride: [] },
     });
     expect(passedIds(input)).toEqual([1]);
