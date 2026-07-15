@@ -12,7 +12,9 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate.ts",
     "db:seed": "tsx scripts/seed.ts",
-    "extract:excel": "tsx scripts/extract-excel.ts"
+    "extract:excel": "tsx scripts/extract-excel.ts",
+    "master:export": "tsx scripts/master-export.ts",
+    "master:csv": "tsx scripts/master-xlsx-to-csv.ts"
   },
   "dependencies": {
     "better-sqlite3": "^12.11.1",
