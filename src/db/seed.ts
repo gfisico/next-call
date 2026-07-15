@@ -55,13 +55,16 @@ export const SETTING_SEEDS: Readonly<Record<string, unknown>> = {
   // #4 管楽器複数時の歌もの減点
   "engine.multi_horn_vocal_penalty": 15,
   // #5 安全性スコアの計算式
-  //   safety_score(0-10) = 2*超定番 + 3*譜面なし対応可 + 2*構成単純
+  //   safety_score(0-10) = 2*超定番 + 3*譜面なし対応可
+  //     + difficulty_coef*(difficulty_midpoint - difficulty)  // difficulty=null は中立(0)
   //     + min(演奏回数,5)*0.4 + min(コール回数,3)*(1/3)
   //   寄与 = (-s) * 1.2 * (safety_score - 5)
+  //   ※ 係数・midpoint は現状 score.ts にハードコード。本 seed は未配線のため挙動不変。
   "engine.safety_weights": {
     is_standard: 2,
     no_chart_ok: 3,
-    simple_form: 2,
+    difficulty_coef: 1,
+    difficulty_midpoint: 3,
     play_count_coef: 0.4,
     play_count_cap: 5,
     call_count_coef: 0.3333,

@@ -13,11 +13,9 @@ export function sameNonNull<T>(a: T | null, b: T | null): boolean {
 }
 
 /**
- * 初心者対応の AND 条件（§8.2）: 超定番 かつ 譜面なし対応可 かつ 構成が単純。
- * 属性 null は「満たさない」扱い（安全側）。
+ * 初心者向き判定（§8.2）: 難易度が低い（difficulty ≤ 2）。
+ * difficulty=null（未設定）は「満たさない」扱い（安全側で除外）。
  */
 export function isBeginnerFriendly(song: EngineSong): boolean {
-  return (
-    song.isStandard === true && song.noChartOk === true && song.simpleForm === true
-  );
+  return song.difficulty !== null && song.difficulty <= 2;
 }
