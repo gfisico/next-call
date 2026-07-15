@@ -1,6 +1,6 @@
 ---
-status: pending
-last_updated: ""
+status: in_progress
+last_updated: "2026-07-15T09:13:44Z"
 depends_on: []
 branch: ai-dlc/song-master-bulk-edit/01-difficulty-attribute
 discipline: backend
