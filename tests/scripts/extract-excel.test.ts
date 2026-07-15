@@ -86,7 +86,7 @@ describe("extract-excel: フィクスチャ抽出", () => {
     // 既定値
     expect(by("Stella")).toMatchObject({
       is_standard: "0",
-      simple_form: "0",
+      difficulty: "",
       season: "通年",
       listener_level: "3",
       energy_level: "3",
