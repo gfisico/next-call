@@ -74,6 +74,7 @@ export function makeSong(
     season: "ALL",
     listenerLevel: 3,
     energyLevel: 3,
+    difficulty: null,
     needsReview: false,
     genres: [],
     ...overrides,

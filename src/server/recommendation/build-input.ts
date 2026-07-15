@@ -66,6 +66,7 @@ function toEngineSong(song: SongWithTags): EngineSong {
     season: song.season,
     listenerLevel: song.listenerLevel,
     energyLevel: song.energyLevel,
+    difficulty: song.difficulty,
     needsReview: song.needsReview,
     genres: song.genreTags,
   };

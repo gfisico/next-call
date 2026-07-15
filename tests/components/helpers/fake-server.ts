@@ -43,6 +43,7 @@ function makeSong(id: number, title: string, extra: Partial<Song> = {}): Song {
     season: "ALL",
     listenerLevel: 3,
     energyLevel: 3,
+    difficulty: null,
     needsReview: false,
     note: null,
     createdAt: "2026-07-01T00:00:00.000Z",
