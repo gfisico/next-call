@@ -330,6 +330,8 @@ export interface StatsQueryParams {
   from?: string;
   /** 期間上限（YYYY-MM-DD） */
   to?: string;
+  /** 曲別リストを「最終演奏日がこの日付以前」の曲に絞る（YYYY-MM-DD）。未指定で絞らない */
+  lastPlayedBefore?: string;
 }
 
 /**
@@ -344,6 +346,7 @@ export function buildStatsQuery(params: StatsQueryParams = {}): string {
   if (params.season && params.season !== "ALL") p.set("season", params.season);
   if (params.from) p.set("from", params.from);
   if (params.to) p.set("to", params.to);
+  if (params.lastPlayedBefore) p.set("lastPlayedBefore", params.lastPlayedBefore);
   const s = p.toString();
   return s ? `?${s}` : "";
 }

@@ -29,6 +29,11 @@ export const statsQuerySchema = z.object({
   season: seasonSchema.optional(),
   from: dateSchema.optional(),
   to: dateSchema.optional(),
+  /**
+   * 最終演奏日（participated=true の max session_date）がこの日付以前の曲だけに
+   * 曲別リストを絞る（HAVING）。未演奏曲（式が NULL）は自動除外。曲別クエリのみに効く。
+   */
+  lastPlayedBefore: dateSchema.optional(),
 });
 
 export type StatsQuery = z.infer<typeof statsQuerySchema>;

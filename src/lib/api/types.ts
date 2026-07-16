@@ -564,8 +564,8 @@ export interface StatsSongStat {
   callCount: number;
   /** 自分が参加した演奏回数（participated 合計） */
   playCount: number;
-  /** participated=true の最終演奏日（久しぶり度の材料）。履歴なしは null */
-  lastPlayedDate: string | null;
+  /** フィルタ下での登場回数（count(*)。参加有無を問わない全登場） */
+  appearanceCount: number;
 }
 
 /** 分布の 1 バケット（key = ジャンル名 / キー / 構成）。count = フィルタ下の演奏件数 */
