@@ -16,6 +16,9 @@ import type {
   ImportType,
   Instrument,
   InstrumentCreatePayload,
+  MemoCommitPayload,
+  MemoCommitSummary,
+  MemoPreviewResult,
   PendingSongEntry,
   PerformanceCreatePayload,
   PerformanceUpdatePayload,
@@ -26,6 +29,7 @@ import type {
   RecommendationResult,
   ResolutionsPayload,
   SessionDetail,
+  SessionParticipantsPayload,
   SessionPatchPayload,
   SessionStartPayload,
   SessionSummary,
@@ -173,6 +177,47 @@ export const patchSession = (id: number, payload: SessionPatchPayload) =>
     method: "PATCH",
     ...jsonBody(payload),
   }).then((b) => b.session);
+
+/** DELETE /api/sessions/:id — セッションの物理削除（cascade）→ 204 */
+export const deleteSession = (id: number) =>
+  apiFetch<void>(`/api/sessions/${id}`, { method: "DELETE" });
+
+/**
+ * PATCH /api/sessions/:id/performances/order — 曲順の一括並べ替え。
+ * order は performance.id を新しい表示順に並べた配列。
+ */
+export const reorderPerformances = (sessionId: number, order: number[]) =>
+  apiFetch<{ performances: PerformanceWithFront[] }>(
+    `/api/sessions/${sessionId}/performances/order`,
+    { method: "PATCH", ...jsonBody({ order }) },
+  ).then((b) => b.performances);
+
+/** PUT /api/sessions/:id/participants — 参加者数の置換 + リスナー数/ホストパート更新 */
+export const putSessionParticipants = (
+  sessionId: number,
+  payload: SessionParticipantsPayload,
+) =>
+  apiFetch<{ session: SessionDetail }>(
+    `/api/sessions/${sessionId}/participants`,
+    { method: "PUT", ...jsonBody(payload) },
+  ).then((b) => b.session);
+
+/**
+ * POST /api/sessions/import-memo/preview — 貼付メモの解析プレビュー。
+ * レスポンスは**エンベロープ無し**でボディをそのまま返す。
+ */
+export const previewMemoImport = (text: string) =>
+  apiFetch<MemoPreviewResult>("/api/sessions/import-memo/preview", {
+    method: "POST",
+    ...jsonBody({ text }),
+  });
+
+/** POST /api/sessions/import-memo/commit — 補正済み確定ペイロードの取込 */
+export const commitMemoImport = (payload: MemoCommitPayload) =>
+  apiFetch<{ summary: MemoCommitSummary }>(
+    "/api/sessions/import-memo/commit",
+    { method: "POST", ...jsonBody(payload) },
+  ).then((b) => b.summary);
 
 export const addPerformance = (
   sessionId: number,

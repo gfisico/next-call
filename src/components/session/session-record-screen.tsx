@@ -2,16 +2,21 @@
 
 /**
  * セッション記録画面（ACTIVE 時のホーム本体 / 履歴詳細で再利用）。
- * - ACTIVE: リスナートグル即 PATCH、曲を追加、次の曲を考える、終了メニュー
+ * - ACTIVE: リスナートグル即 PATCH、曲を追加、次の曲を考える、操作メニュー
  * - ENDED : 読み取り中心。ただし各行の編集・削除は可能（曲追加/次の曲は非表示）
+ * 操作メニューから: セッション情報編集(要件5)・詳細記録(要件7)・曲順編集(要件3)・
+ * 終了・削除(要件4)。フロント編成はカンマ表記(要件2)。ACTIVE はセッション履歴導線(要件1)。
+ * 肥大回避のため各機能は専用サブコンポーネント（sheet/dialog）へ委譲する。
  */
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useSWRConfig } from "swr";
 import {
   ApiClientError,
   deletePerformance,
+  deleteSession,
   patchSession,
 } from "@/lib/api/client";
 import { SWR_KEYS } from "@/lib/api/hooks";
@@ -19,6 +24,9 @@ import type { PerformanceWithFront, SessionDetail } from "@/lib/api/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "./confirm-dialog";
+import { SessionDetailForm } from "./session-detail-form";
+import { SessionEditSheet } from "./session-edit-sheet";
+import { SetlistReorder } from "./setlist-reorder";
 import { SongPerformanceSheet } from "./song-performance-sheet";
 import { Toggle } from "./toggle";
 
@@ -56,6 +64,13 @@ export function SessionRecordScreen({
   const [endOpen, setEndOpen] = useState(false);
   const [ending, setEnding] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+
+  // 追加機能（要件3/5/7）用のシート・ダイアログ状態
+  const [editSessionOpen, setEditSessionOpen] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [reorderOpen, setReorderOpen] = useState(false);
+  const [deleteSessionOpen, setDeleteSessionOpen] = useState(false);
+  const [deletingSession, setDeletingSession] = useState(false);
 
   async function handleListenerChange(next: boolean) {
     const prev = listeners;
@@ -103,7 +118,31 @@ export function SessionRecordScreen({
     }
   }
 
+  async function handleDeleteSession() {
+    setDeletingSession(true);
+    try {
+      await deleteSession(session.id);
+      await Promise.all([
+        mutate(SWR_KEYS.activeSession),
+        mutate(SWR_KEYS.sessions),
+      ]);
+      setDeleteSessionOpen(false);
+      router.push("/sessions");
+    } catch (e) {
+      toast.error(
+        e instanceof ApiClientError
+          ? e.message
+          : "セッションの削除に失敗しました",
+      );
+    } finally {
+      setDeletingSession(false);
+    }
+  }
+
   const performances = session.performances;
+
+  const menuItemClass =
+    "flex h-10 w-full items-center px-3 text-left text-sm outline-none hover:bg-muted focus-visible:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset";
 
   return (
     <div className={isActive ? "pb-16" : undefined}>
@@ -121,36 +160,77 @@ export function SessionRecordScreen({
               ? ` ・ リスナー客${session.hasListeners ? "あり" : "なし"}`
               : ""}
           </p>
+          {/* 要件1: セッション履歴導線（ACTIVE のみ。履歴詳細はラッパが戻りリンクを持つ） */}
+          {isActive ? (
+            <Link
+              href="/sessions"
+              className="mt-1 inline-flex text-sm text-muted-foreground underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              セッション履歴 ›
+            </Link>
+          ) : null}
         </div>
 
-        {isActive ? (
-          <div className="relative">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              aria-label="セッション操作メニュー"
-              aria-expanded={menuOpen}
-              className="h-10 w-10"
-              onClick={() => setMenuOpen((v) => !v)}
-            >
-              <span aria-hidden="true" className="text-lg">
-                ⋯
-              </span>
-            </Button>
-            {menuOpen ? (
-              <>
+        <div className="relative">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="セッション操作メニュー"
+            aria-expanded={menuOpen}
+            className="h-10 w-10"
+            onClick={() => setMenuOpen((v) => !v)}
+          >
+            <span aria-hidden="true" className="text-lg">
+              ⋯
+            </span>
+          </Button>
+          {menuOpen ? (
+            <>
+              <button
+                type="button"
+                aria-hidden="true"
+                tabIndex={-1}
+                className="fixed inset-0 z-10 cursor-default"
+                onClick={() => setMenuOpen(false)}
+              />
+              <div className="absolute right-0 z-20 mt-1 w-48 overflow-hidden rounded-lg border border-border bg-popover shadow-md">
                 <button
                   type="button"
-                  aria-hidden="true"
-                  tabIndex={-1}
-                  className="fixed inset-0 z-10 cursor-default"
-                  onClick={() => setMenuOpen(false)}
-                />
-                <div className="absolute right-0 z-20 mt-1 w-44 overflow-hidden rounded-lg border border-border bg-popover shadow-md">
+                  className={menuItemClass}
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setEditSessionOpen(true);
+                  }}
+                >
+                  セッション情報を編集
+                </button>
+                <button
+                  type="button"
+                  className={menuItemClass}
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setDetailOpen(true);
+                  }}
+                >
+                  詳細を記録
+                </button>
+                {performances.length >= 2 ? (
                   <button
                     type="button"
-                    className="flex h-10 w-full items-center px-3 text-left text-sm outline-none hover:bg-muted focus-visible:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                    className={menuItemClass}
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setReorderOpen(true);
+                    }}
+                  >
+                    曲順を編集
+                  </button>
+                ) : null}
+                {isActive ? (
+                  <button
+                    type="button"
+                    className={menuItemClass}
                     onClick={() => {
                       setMenuOpen(false);
                       setEndOpen(true);
@@ -158,11 +238,21 @@ export function SessionRecordScreen({
                   >
                     セッションを終了
                   </button>
-                </div>
-              </>
-            ) : null}
-          </div>
-        ) : null}
+                ) : null}
+                <button
+                  type="button"
+                  className={`${menuItemClass} text-destructive`}
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setDeleteSessionOpen(true);
+                  }}
+                >
+                  セッションを削除
+                </button>
+              </div>
+            </>
+          ) : null}
+        </div>
       </div>
 
       {/* --- リスナー客トグル（ACTIVE のみ即 PATCH） --- */}
@@ -207,7 +297,7 @@ export function SessionRecordScreen({
                   </span>
                   {p.frontInstruments.length > 0 ? (
                     <span className="mt-0.5 block text-xs text-muted-foreground">
-                      フロント: {p.frontInstruments.map((f) => f.code).join(" → ")}
+                      フロント: {p.frontInstruments.map((f) => f.code).join(", ")}
                     </span>
                   ) : null}
                 </button>
@@ -299,7 +389,40 @@ export function SessionRecordScreen({
         />
       ) : null}
 
-      {/* --- 削除確認（破壊的操作） --- */}
+      {/* --- セッション情報編集シート（要件5） --- */}
+      <SessionEditSheet
+        sessionId={session.id}
+        initialDate={session.sessionDate}
+        initialVenueId={session.venueId}
+        open={editSessionOpen}
+        onOpenChange={setEditSessionOpen}
+        onSaved={() => {
+          void refresh();
+        }}
+      />
+
+      {/* --- 詳細記録シート（要件7） --- */}
+      <SessionDetailForm
+        session={session}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        onSaved={() => {
+          void refresh();
+        }}
+      />
+
+      {/* --- 曲順編集シート（要件3） --- */}
+      <SetlistReorder
+        sessionId={session.id}
+        performances={performances}
+        open={reorderOpen}
+        onOpenChange={setReorderOpen}
+        onSaved={() => {
+          void refresh();
+        }}
+      />
+
+      {/* --- 曲削除確認（破壊的操作） --- */}
       <ConfirmDialog
         open={deleteTarget !== null}
         onOpenChange={(o) => {
@@ -311,6 +434,18 @@ export function SessionRecordScreen({
         confirmVariant="destructive"
         pending={deleting}
         onConfirm={handleDelete}
+      />
+
+      {/* --- セッション削除確認（要件4・不可逆） --- */}
+      <ConfirmDialog
+        open={deleteSessionOpen}
+        onOpenChange={setDeleteSessionOpen}
+        title="セッションを削除しますか？"
+        description={`${session.sessionDate} ・ ${session.venueName} の記録（演奏記録・参加者を含む）を完全に削除します。この操作は元に戻せません。`}
+        confirmLabel="削除する"
+        confirmVariant="destructive"
+        pending={deletingSession}
+        onConfirm={handleDeleteSession}
       />
 
       {/* --- 終了確認（非破壊 → 通常ボタン） --- */}

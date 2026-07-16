@@ -19,7 +19,17 @@ export default function SessionsHistoryPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold tracking-tight">セッション履歴</h1>
+      <div className="flex items-center justify-between gap-2">
+        <h1 className="text-xl font-semibold tracking-tight">
+          セッション履歴
+        </h1>
+        <Link
+          href="/sessions/import-memo"
+          className="inline-flex h-10 items-center rounded-lg border border-border bg-secondary px-3 text-sm font-medium text-secondary-foreground outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          メモから一括取込
+        </Link>
+      </div>
 
       {isLoading ? (
         <p className="mt-4 text-sm text-muted-foreground">読み込み中…</p>
