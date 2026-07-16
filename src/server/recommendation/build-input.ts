@@ -20,7 +20,6 @@ import {
   pendingSongs,
   performanceFrontInstruments,
   performances,
-  sessions,
   songGenreTags,
   venues,
 } from "@/db/schema";
@@ -31,25 +30,12 @@ import type {
   PreviousPerformance,
   Season,
   SelectionIntent,
-  SongStats,
 } from "@/engine/types";
 import { getRecommendationHistory } from "@/server/repositories/recommendations";
 import type { SessionRow } from "@/server/repositories/sessions";
 import { listSongs, type DbOrTx, type SongWithTags } from "@/server/repositories/songs";
+import { aggregatePerSongStats, dateDaysBefore } from "@/server/stats/aggregate";
 import type { RepeatReadParams } from "./config";
-
-/** YYYY-MM-DD の days 日前（日付は JST 解釈だが差分計算は暦日ベースで TZ 非依存） */
-function dateDaysBefore(date: string, days: number): string {
-  const t = new Date(`${date}T00:00:00Z`).getTime();
-  return new Date(t - days * 86_400_000).toISOString().slice(0, 10);
-}
-
-/** YYYY-MM-DD 同士の日数差（from → to。to が新しいとき正） */
-function daysBetween(from: string, to: string): number {
-  const a = new Date(`${from}T00:00:00Z`).getTime();
-  const b = new Date(`${to}T00:00:00Z`).getTime();
-  return Math.round((b - a) / 86_400_000);
-}
 
 function toEngineSong(song: SongWithTags): EngineSong {
   return {
@@ -114,44 +100,14 @@ export function buildEngineInput(params: BuildEngineInputParams): BuiltEngineInp
     .get();
   const isHome = venue?.isHome ?? false;
 
-  // 2. 曲別統計（単一 GROUP BY クエリ）
+  // 2. 曲別統計（単一 GROUP BY クエリ + 履歴なし曲のゼロ埋め）を汎用 util に委譲
   const windowStart = dateDaysBefore(session.sessionDate, params.appearanceWindowDays);
-  const statsRows = dbx
-    .select({
-      songId: performances.songId,
-      appearanceCount: sql<number>`sum(case when ${venues.isHome} = ${isHome ? 1 : 0} and ${sessions.sessionDate} >= ${windowStart} then 1 else 0 end)`,
-      lastPlayedDate: sql<string | null>`max(case when ${performances.participated} = 1 then ${sessions.sessionDate} end)`,
-      myPlayCount: sql<number>`sum(case when ${performances.participated} = 1 then 1 else 0 end)`,
-      myCallCount: sql<number>`sum(case when ${performances.calledByMe} = 1 then 1 else 0 end)`,
-    })
-    .from(performances)
-    .innerJoin(sessions, eq(performances.sessionId, sessions.id))
-    .innerJoin(venues, eq(sessions.venueId, venues.id))
-    .groupBy(performances.songId)
-    .all();
-  const stats: Record<number, SongStats> = {};
-  for (const row of statsRows) {
-    stats[row.songId] = {
-      appearanceCount: row.appearanceCount,
-      daysSinceLastPlayed:
-        row.lastPlayedDate === null
-          ? null
-          : Math.max(daysBetween(row.lastPlayedDate, session.sessionDate), 0),
-      myPlayCount: row.myPlayCount,
-      myCallCount: row.myCallCount,
-    };
-  }
-  // 統計に現れない曲は {0, null, 0, 0}（演奏履歴なし）
-  for (const song of engineSongs) {
-    if (!(song.id in stats)) {
-      stats[song.id] = {
-        appearanceCount: 0,
-        daysSinceLastPlayed: null,
-        myPlayCount: 0,
-        myCallCount: 0,
-      };
-    }
-  }
+  const stats = aggregatePerSongStats(dbx, {
+    songIds: engineSongs.map((s) => s.id),
+    isHome,
+    windowStart,
+    asOfDate: session.sessionDate,
+  });
 
   // 3. 累計コール上位N曲（決定的タイブレーク: count DESC, song_id ASC）
   const topCalledSongIds = dbx

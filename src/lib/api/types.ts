@@ -550,3 +550,75 @@ export interface MemoCommitSummary {
   stubsCreated: number;
   sessionIds: number[];
 }
+
+// --- 統計（unit-04 API・unit-05 統計画面） ----------------------------------
+// 型は src/server/repositories/stats.ts の getStats() 戻り値と一致（camelCase）。
+// GET /api/stats は StatsResponse を **エンベロープ無し** でトップレベル直返しする。
+// unit-05 はこの StatsResponse を import して画面を組む（SSOT）。
+
+/** 曲別集計 1 行（フィルタ下で 1 度でも登場した曲のみ。既定ソート callCount DESC, songId ASC） */
+export interface StatsSongStat {
+  songId: number;
+  title: string;
+  /** 自分がコールした回数（called_by_me 合計） */
+  callCount: number;
+  /** 自分が参加した演奏回数（participated 合計） */
+  playCount: number;
+  /** participated=true の最終演奏日（久しぶり度の材料）。履歴なしは null */
+  lastPlayedDate: string | null;
+}
+
+/** 分布の 1 バケット（key = ジャンル名 / キー / 構成）。count = フィルタ下の演奏件数 */
+export interface StatsBucket {
+  key: string;
+  count: number;
+}
+
+/** 分布（ジャンル/キー/構成）。key が null のキーは "(未設定)" に正規化される */
+export interface StatsDistributions {
+  byGenre: StatsBucket[];
+  byKey: StatsBucket[];
+  byForm: StatsBucket[];
+}
+
+/** 店別傾向 1 行 */
+export interface StatsVenueTrend {
+  venueId: number;
+  venueName: string;
+  count: number;
+}
+
+/** 季節別傾向 1 行（season はセッション日付の月境界で畳み込み。ALL は使わない） */
+export interface StatsSeasonTrend {
+  season: Season;
+  count: number;
+}
+
+/** 傾向（季節別・店別・母店/母店以外別） */
+export interface StatsTrends {
+  bySeason: StatsSeasonTrend[];
+  byVenue: StatsVenueTrend[];
+  byHome: { home: number; nonHome: number };
+}
+
+/**
+ * 月別推移の 1 点（month = "YYYY-MM"）。
+ * - songsPlayed: その月に演奏された「異なる曲数」（distinct song_id）
+ * - newSongRate: その月に初登場した曲の割合（= 新曲数 / songsPlayed）。
+ *   「初登場」はフィルタ後集合内での初出（要件6「その月に初登場した曲」の自己整合な定義）。0 除算は 0。
+ * - diversity: 多様性指標（= songsPlayed / 演奏総数。0–1、高いほど多様＝反復が少ない）。0 除算は 0。
+ */
+export interface StatsMonthlyPoint {
+  month: string;
+  songsPlayed: number;
+  newSongRate: number;
+  diversity: number;
+}
+
+/** GET /api/stats のレスポンス（エンベロープ無し・トップレベル直返し） */
+export interface StatsResponse {
+  songs: StatsSongStat[];
+  distributions: StatsDistributions;
+  trends: StatsTrends;
+  monthly: StatsMonthlyPoint[];
+}
