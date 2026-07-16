@@ -44,24 +44,32 @@ fullstack - API 層（Drizzle SQL / zod / route）と frontend（React コンポ
 6. **要件1**: `rareSongIds` の useMemo・凡例バッジ・行内「久しぶり」バッジを削除。Section 説明文から該当語を除去。
 7. **要件2**: 最終演奏日の列ヘッダ・セルを削除。
 8. **要件3**: 曲別テーブルに 3 列（コール回数 / 演奏回数 / 登場回数）を表示。各列ヘッダをクリックで降順ソート（クライアント側、既定=コール回数 降順）。どの指標でソート中かを視覚表示。`playCount===0` の行に未演奏バッジを付ける。
-9. **要件4**: venue/season フィルタと並べて「最終演奏日」閾値セレクト（なし/3ヶ月/半年/1年/2年）を追加。選択値からクライアントで cutoff 日付（今日から遡った YYYY-MM-DD）を計算し `lastPlayedBefore` として送る。「なし」時は未指定。
+9. **要件4**: 「最終演奏日」閾値セレクト（なし/3ヶ月/半年/1年/2年）を追加。選択値からクライアントで cutoff 日付を計算し `lastPlayedBefore` として送る。「なし」時は未指定。
+   - **配置（W1）**: この閾値コントロールは venue/season の全体フィルタと横並びにせず、**曲別セクション側に配置**する（HAVING が曲別クエリのみに効き、分布/傾向/月別は絞られないため）。全体フィルタ位置に置く場合は「曲別リストのみに適用」のキャプションを必ず添える。
+   - **cutoff 計算（W2・S1）**: 「今日」は **JST（Asia/Tokyo）基準**で求める（`Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tokyo'})` 等）。session_date は JST 基準（`src/db/schema.ts` 参照）。閾値の遡り計算は日跨ぎ/月末の曖昧さを避けるため方式を固定する（3ヶ月=90日/半年=180日/1年=365日/2年=730日 の**日数ベース**で計算し、境界をテストする）。
+   - **空表示の区別（S2）**: 閾値フィルタで曲別が0件になった場合、汎用の「データがありません」ではなく「該当する曲がありません」等、絞り込み由来と分かるメッセージにする（分布等は残るため `isEmpty` の全体空とは別扱い）。
 10. design_rule 準拠（単一 Primary・h-10・focus-visible・コントラスト・モバイル・トークンのみ・raw hex 禁止・ダークモード対応）。
 
 ### テスト
-11. `tests/api/stats.test.ts`: `lastPlayedDate` 期待を除去し `appearanceCount` を検証。`lastPlayedBefore` フィルタ（閾値以上前の曲のみ・未演奏除外）を検証。既存の分布/傾向/月別の assert は不変で通ること。
-12. `tests/components/stats-screen.test.tsx`: 久しぶりバッジ関連の assert を除去。3指標列の表示・降順ソート（クリックで並び替わる）・未演奏バッジ・閾値フィルタが `lastPlayedBefore` クエリを送ることを検証。mock の `StatsSongStat` を新形（appearanceCount 追加・lastPlayedDate 削除）に更新。
+11. `tests/api/stats.test.ts`: `lastPlayedDate` 期待を除去し `appearanceCount` を検証。`lastPlayedBefore` フィルタ（閾値以上前の曲のみ・未演奏除外）を検証。
+    - **participated 基準の検証（W3）**: 「最新の登場(appearance)は新しいが、自分が participated した最新日は古い」曲を用意し、`lastPlayedBefore` フィルタで**捕まる**ことを assert（フィルタが登場日でなく participated 日で判定することを保証。`lastPlayedDate` がレスポンスから消えても participated 基準が守られていることの担保）。
+    - **フィルタ範囲の非対称（W1）**: `lastPlayedBefore` 指定時に分布/傾向/月別セクションの集計が**影響を受けない**ことを assert。既存の分布/傾向/月別の assert も不変で通ること。
+12. `tests/components/stats-screen.test.tsx`: 久しぶりバッジ関連の assert を除去。3指標列の表示・降順ソート（クリックで並び替わる）・未演奏バッジ・閾値フィルタが `lastPlayedBefore` クエリを送ることを検証。mock の `StatsSongStat` を新形（appearanceCount 追加・lastPlayedDate 削除）に更新。閾値0件時の「該当する曲がありません」表示（S2）も検証。
 
 ## Success Criteria
 - [ ] `StatsSongStat` に `appearanceCount` があり `lastPlayedDate` が無い（型・レスポンス・stats.test.ts で検証）
 - [ ] 曲別テーブルに 久しぶりバッジ・最終演奏日列が無い
 - [ ] コール回数/演奏回数/登場回数 の3列が表示され、各列で降順ソートできる（既定=コール回数降順）
 - [ ] `playCount===0` の曲に未演奏バッジが付き、登場実績のある曲が全て表示される
-- [ ] `lastPlayedBefore` フィルタ（なし/3ヶ月/半年/1年/2年）が該当曲に絞り、未演奏曲を除外する（HAVING、曲別クエリのみ）。UI 選択でクエリ送信・再フェッチされる
+- [ ] `lastPlayedBefore` フィルタ（なし/3ヶ月/半年/1年/2年）が該当曲に絞り、未演奏曲を除外する（HAVING、曲別クエリのみ）。UI 選択でクエリ送信・再フェッチされる。cutoff は JST 基準・日数ベースで計算される
+- [ ] 閾値フィルタは曲別リストのみに効き、分布/傾向/月別は影響を受けない（テストで検証）。フィルタが participated 日基準であること（登場日でない）がテストで担保される
 - [ ] 分布/傾向/月別セクションと統計以外に回帰が無い（既存テスト更新のうえ全通過）
 - [ ] typecheck / lint / test / build がパスし、docs/design_rule.md に準拠する
 
 ## Risks
-- **HAVING の適用範囲誤り**: 閾値フィルタを分布/傾向/月別にも掛けると意図しない絞り込みになる。Mitigation: HAVING は `songRows`（曲別）クエリだけに付与し、他クエリは不変。テストで分布/傾向が閾値フィルタの影響を受けないことを確認。
+- **HAVING の適用範囲誤り / UI の誤認（W1）**: 閾値フィルタを分布/傾向/月別にも掛けると意図しない絞り込みになる。また全体フィルタと横並びだと分布等も絞られると誤認させる。Mitigation: HAVING は `songRows`（曲別）クエリだけに付与し他クエリは不変。閾値コントロールは曲別セクション側に配置（or 適用範囲キャプション）。分布/傾向/月別が閾値の影響を受けないことをテストで確認。
+- **JST cutoff の日付ズレ（W2）**: UTC/ブラウザローカルで「今日」を取ると JST 利用者で1日ズレる。Mitigation: Asia/Tokyo で「今日」を算出し、日数ベースで遡って cutoff を作る。境界をテスト。
+- **participated 基準の検証喪失（W3）**: lastPlayedDate をレスポンスから消すと participated 基準の担保が DTO で見えなくなる。Mitigation: 「登場は新しいが participated は古い曲」がフィルタで捕まるテストを追加。
 - **lastPlayedDate 削除の取りこぼし**: 型から消しても画面/テストに参照が残るとコンパイル/テスト失敗。Mitigation: 型・select・map・画面・テストを同一ユニットで一括変更（1ユニットに統合した理由）。
 - **クライアントソートの安定性**: 同値時の順序ブレ。Mitigation: サーバ既定 `callCount DESC` をタイブレークに、ソートは安定ソートで実装。
 - **cutoff 日付計算の境界**: 「なし」と閾値の切替、月/年の遡り計算。Mitigation: 「なし」は未指定、閾値は明確な日数/年で計算しテスト。
