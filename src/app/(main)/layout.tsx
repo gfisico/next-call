@@ -1,4 +1,5 @@
 import { BottomNav } from "@/components/shell/bottom-nav";
+import { ThemeToggle } from "@/components/shell/theme-toggle";
 import { Toaster } from "@/components/ui/sonner";
 
 /**
@@ -13,8 +14,9 @@ export default function MainLayout({
   return (
     <div className="flex min-h-dvh flex-col bg-background text-foreground">
       <header className="border-b border-border">
-        <div className="mx-auto flex h-12 max-w-lg items-center px-4">
+        <div className="mx-auto flex h-12 max-w-lg items-center justify-between px-4">
           <span className="text-base font-semibold">next-call</span>
+          <ThemeToggle />
         </div>
       </header>
       {/* 下部ナビ（h-14）と重ならないよう余白を確保 */}
