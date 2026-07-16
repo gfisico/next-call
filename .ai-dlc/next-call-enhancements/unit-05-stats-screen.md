@@ -1,6 +1,6 @@
 ---
-status: in_progress
-last_updated: "2026-07-16T05:18:12Z"
+status: completed
+last_updated: "2026-07-16T05:34:51Z"
 depends_on: [unit-04-stats-api]
 branch: ai-dlc/next-call-enhancements/05-stats-screen
 discipline: frontend
