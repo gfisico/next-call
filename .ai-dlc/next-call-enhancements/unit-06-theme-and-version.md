@@ -1,6 +1,6 @@
 ---
-status: in_progress
-last_updated: "2026-07-16T05:35:08Z"
+status: completed
+last_updated: "2026-07-16T05:55:04Z"
 depends_on: []
 branch: ai-dlc/next-call-enhancements/06-theme-and-version
 discipline: frontend
