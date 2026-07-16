@@ -257,3 +257,61 @@ export function deletePerformance(id: number, db: Db = getDb()): void {
     });
   });
 }
+
+/**
+ * 曲順の一括並べ替え（単一トランザクション）。
+ * 受け取った performance id の並び順に order_index を 1..N で再採番する
+ * （addPerformance の max+1・deletePerformance の 1..N 詰め直しと採番基準を揃える）。
+ *
+ * orderedIds はセッションの全 performance と過不足なく一致していなければならない
+ * （欠落・余剰・重複はいずれも 400）。存在しないセッションは 404。
+ * order_index に unique 制約は無い（schema 確認済み）ため直接 1..N 上書きで衝突しない。
+ * 並べ替え後も「直前の曲 = order_index 最大行」の判定は維持される。
+ */
+export function reorderPerformances(
+  sessionId: number,
+  orderedIds: number[],
+  db: Db = getDb(),
+): PerformanceWithFront[] {
+  return db.transaction((tx) => {
+    const session = tx
+      .select({ id: sessions.id })
+      .from(sessions)
+      .where(eq(sessions.id, sessionId))
+      .get();
+    if (!session) {
+      throw notFound(`セッションが見つかりません: id=${sessionId}`);
+    }
+
+    const current = tx
+      .select({ id: performances.id })
+      .from(performances)
+      .where(eq(performances.sessionId, sessionId))
+      .all()
+      .map((r) => r.id);
+
+    // orderedIds が現行 performance 集合と過不足なく一致するか検証
+    //  - 重複 / 欠落 / 余剰 → いずれも VALIDATION_ERROR
+    const currentSet = new Set(current);
+    const matches =
+      new Set(orderedIds).size === orderedIds.length && // 重複なし
+      orderedIds.length === current.length && // 件数一致
+      orderedIds.every((pid) => currentSet.has(pid)); // 全て現行に含まれる
+    if (!matches) {
+      throw validationError(
+        "並べ替え対象がセッションの全演奏記録と一致しません",
+        { expected: current, received: orderedIds },
+      );
+    }
+
+    // 受領順に order_index = 1..N を再採番
+    orderedIds.forEach((pid, i) => {
+      tx.update(performances)
+        .set({ orderIndex: i + 1 })
+        .where(eq(performances.id, pid))
+        .run();
+    });
+
+    return listPerformancesForSession(tx, sessionId);
+  });
+}

@@ -6,6 +6,8 @@ import { getDb, type Db } from "@/db/client";
 import {
   performanceFrontInstruments,
   performances,
+  recommendationCandidates,
+  recommendationRequests,
   sessions,
   songs,
   venues,
@@ -164,7 +166,10 @@ export function getSession(id: number, dbx: DbOrTx = getDb()): SessionDetail {
   return toDetail(dbx, getSessionOrThrow(dbx, id));
 }
 
-/** 更新（has_listeners 切替・note・status: ENDED への遷移のみ） */
+/**
+ * 更新（sessionDate・venueId・has_listeners 切替・note・status: ENDED への遷移）。
+ * venueId 変更時は店舗の存在を検証する（無ければ 400。startSession と同一方針）。
+ */
 export function updateSession(
   id: number,
   patch: SessionUpdateInput,
@@ -172,6 +177,16 @@ export function updateSession(
 ): SessionDetail {
   return db.transaction((tx) => {
     getSessionOrThrow(tx, id);
+    if (patch.venueId !== undefined) {
+      const venue = tx
+        .select({ id: venues.id })
+        .from(venues)
+        .where(eq(venues.id, patch.venueId))
+        .get();
+      if (!venue) {
+        throw validationError(`店舗が存在しません: venueId=${patch.venueId}`);
+      }
+    }
     const updated = tx
       .update(sessions)
       .set(patch)
@@ -179,5 +194,69 @@ export function updateSession(
       .returning()
       .get();
     return toDetail(tx, updated);
+  });
+}
+
+/**
+ * セッションの物理削除（単一トランザクション・cascade）。
+ *
+ * FK 強制（src/db/client.ts foreign_keys = ON・明示 CASCADE 無し）のため、
+ * sessions を参照する全テーブルを葉→根の順で手動削除する。
+ * 現行 sessions 参照テーブルは performances / recommendation_requests の 2 つ
+ * （src/db/schema.ts 全走査で確認）。削除順:
+ *   1. recommendation_candidates（request_id → recommendation_requests）
+ *   2. recommendation_requests（session_id → sessions）
+ *   3. performance_front_instruments（performance_id → performances）
+ *   4. performances（session_id → sessions）
+ *   5. sessions
+ *
+ * pending_songs は songs 参照でセッション横断保持のため削除しない（仕様§16）。
+ * 存在しない id は 404。削除件数（= 削除した sessions 行数）を返す。
+ */
+export function deleteSessionCascade(
+  id: number,
+  db: Db = getDb(),
+): { deleted: number } {
+  return db.transaction((tx) => {
+    getSessionOrThrow(tx, id);
+
+    // 子テーブルの絞り込み用に、このセッションに属する id 群を先に取得する
+    const perfIds = tx
+      .select({ id: performances.id })
+      .from(performances)
+      .where(eq(performances.sessionId, id))
+      .all()
+      .map((r) => r.id);
+    const requestIds = tx
+      .select({ id: recommendationRequests.id })
+      .from(recommendationRequests)
+      .where(eq(recommendationRequests.sessionId, id))
+      .all()
+      .map((r) => r.id);
+
+    // 1. recommendation_candidates（request_id → recommendation_requests）
+    if (requestIds.length > 0) {
+      tx.delete(recommendationCandidates)
+        .where(inArray(recommendationCandidates.requestId, requestIds))
+        .run();
+    }
+    // 2. recommendation_requests（session_id → sessions）
+    tx.delete(recommendationRequests)
+      .where(eq(recommendationRequests.sessionId, id))
+      .run();
+    // 3. performance_front_instruments（performance_id → performances）
+    if (perfIds.length > 0) {
+      tx.delete(performanceFrontInstruments)
+        .where(inArray(performanceFrontInstruments.performanceId, perfIds))
+        .run();
+    }
+    // unit-02 追加ポイント: session_participants（session_id FK・notNull）を新設したら、
+    // ここ（performances 削除の直前）で session_id = id の行を削除すること。
+    // 4. performances（session_id → sessions）
+    tx.delete(performances).where(eq(performances.sessionId, id)).run();
+    // 5. sessions
+    const result = tx.delete(sessions).where(eq(sessions.id, id)).run();
+
+    return { deleted: result.changes };
   });
 }
