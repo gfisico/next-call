@@ -19,6 +19,7 @@ vi.mock("sonner", () => ({
 }));
 
 import { SettingsScreen } from "@/components/master/settings-screen";
+import { APP_VERSION } from "@/version";
 import { bodyOf, installFetch, type RouteHandler } from "./helpers/mock-fetch";
 import { renderWithSWR } from "./helpers/render";
 
@@ -153,6 +154,13 @@ describe("SettingsScreen (unit-07)", () => {
     };
     expect(b.code).toBe("vib");
     expect(b.label).toBe("ヴィブラフォン");
+  });
+
+  it("APP_VERSION（SSOT import）を vYYYYMMDD-NN 形式で表示する (unit-06 criterion 6)", async () => {
+    setup();
+    // ハードコードではなく import した定数が描画されることを担保
+    expect(APP_VERSION).toMatch(/^v\d{8}-\d{2}$/);
+    expect(await screen.findByText(APP_VERSION)).toBeInTheDocument();
   });
 
   it("母店 Toggle で venues を PATCH する (criterion 4)", async () => {

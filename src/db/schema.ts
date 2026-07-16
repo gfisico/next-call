@@ -153,8 +153,41 @@ export const sessions = sqliteTable("sessions", {
     .notNull()
     .default("ACTIVE"),
   note: text("note"),
+  /**
+   * ホストのパート（unit-02 要件7。nullable FK→instruments.code）。
+   * 詳細記録・メモ移行で設定。has_listeners とは独立。
+   */
+  hostInstrumentCode: text("host_instrument_code").references(
+    () => instruments.code,
+  ),
+  /** リスナー客の人数（unit-02 要件7。nullable。has_listeners とは別軸の実数） */
+  listenerCount: integer("listener_count"),
   createdAt: text("created_at").notNull().default(utcNow),
 });
+
+/**
+ * session_participants — セッションのパート別参加者数（unit-02 要件7）
+ *
+ * パート（楽器）ごとの参加人数を持つ。リスナーは含めない（リスナー数は
+ * sessions.listener_count 側）。PK=(session_id, instrument_code)。
+ * instrument_code は FK→instruments.code（フロント楽器 + リズム隊コードを含む。seed 参照）。
+ */
+export const sessionParticipants = sqliteTable(
+  "session_participants",
+  {
+    sessionId: integer("session_id")
+      .notNull()
+      .references(() => sessions.id),
+    instrumentCode: text("instrument_code")
+      .notNull()
+      .references(() => instruments.code),
+    /** そのパートの参加人数（0 以上） */
+    count: integer("count").notNull().default(0),
+  },
+  (table) => [
+    primaryKey({ columns: [table.sessionId, table.instrumentCode] }),
+  ],
+);
 
 /**
  * performances — 演奏記録 / セットリスト行（仕様§5）

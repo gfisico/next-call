@@ -23,7 +23,17 @@ export interface SessionRow {
   hasListeners: boolean;
   status: SessionStatus;
   note: string | null;
+  /** リスナー客数（未設定は null。unit-02） */
+  listenerCount: number | null;
+  /** ホストパートの楽器コード（未設定は null。unit-02） */
+  hostInstrumentCode: string | null;
   createdAt: string;
+}
+
+/** session_participants 1 行（instrument_code 昇順。リスナーは含まない） */
+export interface SessionParticipant {
+  instrumentCode: string;
+  count: number;
 }
 
 /** performances 1 行 + 曲名 + フロント編成（GET /api/sessions* が返す形） */
@@ -46,6 +56,8 @@ export interface PerformanceWithFront {
 export interface SessionDetail extends SessionRow {
   venueName: string;
   performances: PerformanceWithFront[];
+  /** パート別参加者数（instrument_code 昇順。リスナーは含まない。unit-02） */
+  participants: SessionParticipant[];
 }
 
 /** GET /api/sessions（一覧・venueName 付き・新しい順） */
@@ -114,10 +126,26 @@ export interface SessionStartPayload {
   sessionDate?: string;
 }
 
-export type SessionPatchPayload =
-  | { hasListeners: boolean }
-  | { note: string | null }
-  | { status: "ENDED" };
+/**
+ * PATCH /api/sessions/:id の部分更新ボディ（sessionUpdateSchema と一致・camelCase）。
+ * 少なくとも 1 キーを送る（サーバ側 nonEmptyObject で担保）。
+ */
+export type SessionPatchPayload = Partial<{
+  hasListeners: boolean;
+  note: string | null;
+  status: "ENDED";
+  sessionDate: string;
+  venueId: number;
+}>;
+
+/** PUT /api/sessions/:id/participants のボディ（sessionParticipantsSchema と一致） */
+export interface SessionParticipantsPayload {
+  participants: SessionParticipant[];
+  /** 省略で据え置き / null で明示クリア */
+  listenerCount?: number | null;
+  /** 省略で据え置き / null で明示クリア */
+  hostInstrumentCode?: string | null;
+}
 
 /** POST /api/sessions/:id/performances（songId か quickTitle のどちらか一方） */
 export interface PerformanceCreatePayload {
@@ -404,4 +432,193 @@ export interface CommitSummary {
 /** POST /api/import/jobs/:jobId/commit のボディ（任意） */
 export interface CommitPayload {
   recalcHasPlayed?: boolean;
+}
+
+// --- メモ一括移行（unit-02 API・要件7） -------------------------------------
+// 型は src/server/import/memo-preview.ts / src/server/validation/import-memo.ts と一致。
+
+/** プレビュー: 参加者 1 行（known=false は要確認 / クイック追加候補） */
+export interface MemoPreviewInstrument {
+  code: string;
+  count: number;
+  known: boolean;
+}
+
+/** プレビュー: フロント編成 1 コード */
+export interface MemoPreviewFront {
+  code: string;
+  known: boolean;
+}
+
+/** プレビュー: 曲名突合結果（existing=マスタ一致 / new=未一致） */
+export type MemoSongMatch =
+  | {
+      kind: "existing";
+      id: number;
+      title: string;
+      matchType: TitleCandidate["matchType"];
+    }
+  | { kind: "new" };
+
+/** プレビュー: 店舗突合結果 */
+export type MemoVenueMatch =
+  | { kind: "existing"; id: number }
+  | { kind: "new" };
+
+/** プレビュー: 1 曲 */
+export interface MemoPreviewSong {
+  order: number;
+  title: string;
+  front: MemoPreviewFront[];
+  played: boolean;
+  instrument: ParticipationInstrument;
+  calledByMe: boolean;
+  beginnerFirst: boolean;
+  note: string | null;
+  songMatch: MemoSongMatch;
+  candidates: TitleCandidate[];
+}
+
+/** プレビュー: 1 セッション */
+export interface MemoPreviewSession {
+  date: string | null;
+  venueName: string | null;
+  venueMatch: MemoVenueMatch;
+  participants: MemoPreviewInstrument[];
+  host: { code: string; known: boolean } | null;
+  songs: MemoPreviewSong[];
+  overallNote: string | null;
+  /** 人間の確定が必要な事項（要確認） */
+  needsReview: string[];
+  /** 情報提示（母店フラグ要確認・日付欠落 等） */
+  warnings: string[];
+}
+
+/** POST /api/sessions/import-memo/preview のレスポンス（**エンベロープ無し**） */
+export interface MemoPreviewResult {
+  sessions: MemoPreviewSession[];
+  /** 全セッションで未知だった楽器コード（クイック登録候補） */
+  unknownInstrumentCodes: string[];
+  /** パーサ由来の警告 */
+  warnings: string[];
+}
+
+/** commit: 店舗参照（既存 id / 新規 name+isHome） */
+export type MemoCommitVenueRef =
+  | { kind: "existing"; id: number }
+  | { kind: "new"; name: string; isHome: boolean };
+
+/** commit: 曲参照（既存 id / 新規 title+needsReview） */
+export type MemoCommitSongRef =
+  | { kind: "existing"; id: number }
+  | { kind: "new"; title: string; needsReview: boolean };
+
+/** commit: 1 演奏（order 昇順で 1..N 採番される） */
+export interface MemoCommitPerformance {
+  order: number;
+  songRef: MemoCommitSongRef;
+  frontInstruments: string[];
+  participated: boolean;
+  instrument: ParticipationInstrument;
+  calledByMe: boolean;
+  noChart: boolean;
+  note?: string | null;
+}
+
+/** commit: 1 セッション（status=ENDED で作成される） */
+export interface MemoCommitSession {
+  sessionDate: string;
+  venue: MemoCommitVenueRef;
+  listenerCount?: number | null;
+  hostInstrumentCode?: string | null;
+  participants: SessionParticipant[];
+  performances: MemoCommitPerformance[];
+}
+
+/** POST /api/sessions/import-memo/commit のボディ（補正済み確定ペイロード・テキストは送らない） */
+export interface MemoCommitPayload {
+  sessions: MemoCommitSession[];
+}
+
+/** POST /api/sessions/import-memo/commit の summary */
+export interface MemoCommitSummary {
+  sessionsCreated: number;
+  performancesCreated: number;
+  frontInstrumentsCreated: number;
+  participantsCreated: number;
+  venuesCreated: number;
+  stubsCreated: number;
+  sessionIds: number[];
+}
+
+// --- 統計（unit-04 API・unit-05 統計画面） ----------------------------------
+// 型は src/server/repositories/stats.ts の getStats() 戻り値と一致（camelCase）。
+// GET /api/stats は StatsResponse を **エンベロープ無し** でトップレベル直返しする。
+// unit-05 はこの StatsResponse を import して画面を組む（SSOT）。
+
+/** 曲別集計 1 行（フィルタ下で 1 度でも登場した曲のみ。既定ソート callCount DESC, songId ASC） */
+export interface StatsSongStat {
+  songId: number;
+  title: string;
+  /** 自分がコールした回数（called_by_me 合計） */
+  callCount: number;
+  /** 自分が参加した演奏回数（participated 合計） */
+  playCount: number;
+  /** participated=true の最終演奏日（久しぶり度の材料）。履歴なしは null */
+  lastPlayedDate: string | null;
+}
+
+/** 分布の 1 バケット（key = ジャンル名 / キー / 構成）。count = フィルタ下の演奏件数 */
+export interface StatsBucket {
+  key: string;
+  count: number;
+}
+
+/** 分布（ジャンル/キー/構成）。key が null のキーは "(未設定)" に正規化される */
+export interface StatsDistributions {
+  byGenre: StatsBucket[];
+  byKey: StatsBucket[];
+  byForm: StatsBucket[];
+}
+
+/** 店別傾向 1 行 */
+export interface StatsVenueTrend {
+  venueId: number;
+  venueName: string;
+  count: number;
+}
+
+/** 季節別傾向 1 行（season はセッション日付の月境界で畳み込み。ALL は使わない） */
+export interface StatsSeasonTrend {
+  season: Season;
+  count: number;
+}
+
+/** 傾向（季節別・店別・母店/母店以外別） */
+export interface StatsTrends {
+  bySeason: StatsSeasonTrend[];
+  byVenue: StatsVenueTrend[];
+  byHome: { home: number; nonHome: number };
+}
+
+/**
+ * 月別推移の 1 点（month = "YYYY-MM"）。
+ * - songsPlayed: その月に演奏された「異なる曲数」（distinct song_id）
+ * - newSongRate: その月に初登場した曲の割合（= 新曲数 / songsPlayed）。
+ *   「初登場」はフィルタ後集合内での初出（要件6「その月に初登場した曲」の自己整合な定義）。0 除算は 0。
+ * - diversity: 多様性指標（= songsPlayed / 演奏総数。0–1、高いほど多様＝反復が少ない）。0 除算は 0。
+ */
+export interface StatsMonthlyPoint {
+  month: string;
+  songsPlayed: number;
+  newSongRate: number;
+  diversity: number;
+}
+
+/** GET /api/stats のレスポンス（エンベロープ無し・トップレベル直返し） */
+export interface StatsResponse {
+  songs: StatsSongStat[];
+  distributions: StatsDistributions;
+  trends: StatsTrends;
+  monthly: StatsMonthlyPoint[];
 }

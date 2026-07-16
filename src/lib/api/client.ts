@@ -16,6 +16,9 @@ import type {
   ImportType,
   Instrument,
   InstrumentCreatePayload,
+  MemoCommitPayload,
+  MemoCommitSummary,
+  MemoPreviewResult,
   PendingSongEntry,
   PerformanceCreatePayload,
   PerformanceUpdatePayload,
@@ -25,7 +28,9 @@ import type {
   RecommendationRequestPayload,
   RecommendationResult,
   ResolutionsPayload,
+  Season,
   SessionDetail,
+  SessionParticipantsPayload,
   SessionPatchPayload,
   SessionStartPayload,
   SessionSummary,
@@ -33,6 +38,7 @@ import type {
   Song,
   SongListQuery,
   SongUpsertPayload,
+  StatsResponse,
   Venue,
   VenueCreatePayload,
   VenueUpdatePayload,
@@ -174,6 +180,47 @@ export const patchSession = (id: number, payload: SessionPatchPayload) =>
     ...jsonBody(payload),
   }).then((b) => b.session);
 
+/** DELETE /api/sessions/:id — セッションの物理削除（cascade）→ 204 */
+export const deleteSession = (id: number) =>
+  apiFetch<void>(`/api/sessions/${id}`, { method: "DELETE" });
+
+/**
+ * PATCH /api/sessions/:id/performances/order — 曲順の一括並べ替え。
+ * order は performance.id を新しい表示順に並べた配列。
+ */
+export const reorderPerformances = (sessionId: number, order: number[]) =>
+  apiFetch<{ performances: PerformanceWithFront[] }>(
+    `/api/sessions/${sessionId}/performances/order`,
+    { method: "PATCH", ...jsonBody({ order }) },
+  ).then((b) => b.performances);
+
+/** PUT /api/sessions/:id/participants — 参加者数の置換 + リスナー数/ホストパート更新 */
+export const putSessionParticipants = (
+  sessionId: number,
+  payload: SessionParticipantsPayload,
+) =>
+  apiFetch<{ session: SessionDetail }>(
+    `/api/sessions/${sessionId}/participants`,
+    { method: "PUT", ...jsonBody(payload) },
+  ).then((b) => b.session);
+
+/**
+ * POST /api/sessions/import-memo/preview — 貼付メモの解析プレビュー。
+ * レスポンスは**エンベロープ無し**でボディをそのまま返す。
+ */
+export const previewMemoImport = (text: string) =>
+  apiFetch<MemoPreviewResult>("/api/sessions/import-memo/preview", {
+    method: "POST",
+    ...jsonBody({ text }),
+  });
+
+/** POST /api/sessions/import-memo/commit — 補正済み確定ペイロードの取込 */
+export const commitMemoImport = (payload: MemoCommitPayload) =>
+  apiFetch<{ summary: MemoCommitSummary }>(
+    "/api/sessions/import-memo/commit",
+    { method: "POST", ...jsonBody(payload) },
+  ).then((b) => b.summary);
+
 export const addPerformance = (
   sessionId: number,
   payload: PerformanceCreatePayload,
@@ -270,6 +317,40 @@ export const fetchGenreTags = () =>
   apiFetch<{ genreTags: GenreTag[] }>("/api/genre-tags").then(
     (b) => b.genreTags,
   );
+
+// --- 統計（unit-04 API・unit-05 統計画面） --------------------------------
+
+/** GET /api/stats のクエリパラメータ（すべて任意） */
+export interface StatsQueryParams {
+  /** 店フィルタ。"all" | "home" | "non_home" | 正の整数 venueId（既定 "all"） */
+  venue?: "all" | "home" | "non_home" | number;
+  /** 季節フィルタ。"ALL" は全期間扱い → クエリから省略 */
+  season?: Season;
+  /** 期間下限（YYYY-MM-DD） */
+  from?: string;
+  /** 期間上限（YYYY-MM-DD） */
+  to?: string;
+}
+
+/**
+ * GET /api/stats のクエリ文字列を組み立てる。
+ * 既定値（venue=all / season=ALL）は省略し URL をクリーンに保つ。
+ */
+export function buildStatsQuery(params: StatsQueryParams = {}): string {
+  const p = new URLSearchParams();
+  if (params.venue != null && params.venue !== "all") {
+    p.set("venue", String(params.venue));
+  }
+  if (params.season && params.season !== "ALL") p.set("season", params.season);
+  if (params.from) p.set("from", params.from);
+  if (params.to) p.set("to", params.to);
+  const s = p.toString();
+  return s ? `?${s}` : "";
+}
+
+/** GET /api/stats — StatsResponse をエンベロープ無しでそのまま返す */
+export const fetchStats = (params: StatsQueryParams = {}) =>
+  apiFetch<StatsResponse>(`/api/stats${buildStatsQuery(params)}`);
 
 // --- 設定・楽器・店舗（unit-07） --------------------------------------------
 

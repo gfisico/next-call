@@ -21,7 +21,15 @@ export const GENRE_TAG_NAMES = [
   "キメが多い曲",
 ] as const;
 
-/** フロント楽器 初期12種（Domain Model Review Decision 1） */
+/**
+ * フロント楽器 初期12種（Domain Model Review Decision 1）+ リズム隊3種（unit-02）。
+ *
+ * リズム隊コード（pf/b/ds）は unit-02 で追加。メモ移行のパート別人数行
+ * （例: `pf2, b3, ds3`）とホスト行（例: `ホストはpf`）が参照するため、
+ * session_participants.instrument_code / sessions.host_instrument_code
+ * （共に FK→instruments.code）で保存できるよう seed に含める。
+ * 選定コード: pf=ピアノ / b=ベース / ds=ドラム（メモ表記に合わせた慣用略号）。
+ */
 export const INSTRUMENT_SEEDS: ReadonlyArray<{
   code: string;
   label: string;
@@ -39,6 +47,10 @@ export const INSTRUMENT_SEEDS: ReadonlyArray<{
   { code: "tb", label: "トロンボーン", sortOrder: 10 },
   { code: "cl", label: "クラリネット", sortOrder: 11 },
   { code: "g", label: "ギター", sortOrder: 12 },
+  // --- リズム隊（unit-02 追加。メモ移行の pf/b/ds を保持するため） ---
+  { code: "pf", label: "ピアノ", sortOrder: 13 },
+  { code: "b", label: "ベース", sortOrder: 14 },
+  { code: "ds", label: "ドラム", sortOrder: 15 },
 ];
 
 /**
