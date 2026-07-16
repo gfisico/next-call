@@ -5,7 +5,7 @@
  * - フロント編成 vo, as, as, ts の順序・重複保持
  * - quick_title 経由の追加、songId と quickTitle の排他 400
  */
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   expectApiError,
@@ -26,6 +26,8 @@ afterEach(() => {
 
 const addRoute = () => import("@/app/api/sessions/[id]/performances/route");
 const perfByIdRoute = () => import("@/app/api/performances/[id]/route");
+const reorderRoute = () =>
+  import("@/app/api/sessions/[id]/performances/order/route");
 
 /** 曲・店舗・ACTIVE セッションを用意する共通セットアップ */
 async function fixture() {
@@ -347,5 +349,112 @@ describe("DELETE /api/performances/:id", () => {
       routeParams({ id: "9999" }),
     );
     await expectApiError(res, 404, "NOT_FOUND");
+  });
+});
+
+describe("PATCH /api/sessions/:id/performances/order", () => {
+  /** ACTIVE セッションに 3 件の演奏記録（order 1,2,3）を用意する */
+  async function threePerformances() {
+    const { song, session } = await fixture();
+    const ids: number[] = [];
+    for (let i = 0; i < 3; i++) {
+      const { performance } = await (
+        await addPerformanceViaApi(session.id, { songId: song.id })
+      ).json();
+      ids.push(performance.id);
+    }
+    return { session, ids };
+  }
+
+  async function reorderViaApi(sessionId: number, order: number[]) {
+    const { PATCH } = await reorderRoute();
+    return PATCH(
+      jsonRequest(
+        `/api/sessions/${sessionId}/performances/order`,
+        "PATCH",
+        { order },
+      ),
+      routeParams({ id: String(sessionId) }),
+    );
+  }
+
+  it("受領順に order_index が 1..N へ再採番される", async () => {
+    const { session, ids } = await threePerformances();
+    const res = await reorderViaApi(session.id, [ids[2], ids[0], ids[1]]);
+    expect(res.status).toBe(200);
+    const { performances } = await res.json();
+    // 返却は order_index 昇順（= 受領順）
+    expect(
+      performances.map((p: { id: number; orderIndex: number }) => [
+        p.id,
+        p.orderIndex,
+      ]),
+    ).toEqual([
+      [ids[2], 1],
+      [ids[0], 2],
+      [ids[1], 3],
+    ]);
+
+    // DB 直接検証でも同じ
+    const { getDb } = await import("@/db/client");
+    const { performances: perfTable } = await import("@/db/schema");
+    const rows = getDb()
+      .select({ id: perfTable.id, orderIndex: perfTable.orderIndex })
+      .from(perfTable)
+      .where(eq(perfTable.sessionId, session.id))
+      .all()
+      .sort((a, b) => a.orderIndex - b.orderIndex);
+    expect(rows).toEqual([
+      { id: ids[2], orderIndex: 1 },
+      { id: ids[0], orderIndex: 2 },
+      { id: ids[1], orderIndex: 3 },
+    ]);
+  });
+
+  it("並べ替え後も「直前の曲 = order_index 最大行」が新しい末尾を指す", async () => {
+    const { session, ids } = await threePerformances();
+    await reorderViaApi(session.id, [ids[2], ids[0], ids[1]]);
+
+    // order_index 最大（DESC LIMIT 1）= 直前の曲
+    const { getDb } = await import("@/db/client");
+    const { performances: perfTable } = await import("@/db/schema");
+    const last = getDb()
+      .select({ id: perfTable.id, orderIndex: perfTable.orderIndex })
+      .from(perfTable)
+      .where(eq(perfTable.sessionId, session.id))
+      .orderBy(desc(perfTable.orderIndex))
+      .get();
+    expect(last).toEqual({ id: ids[1], orderIndex: 3 });
+  });
+
+  it("id 集合不一致（欠落・余剰・重複）は 400", async () => {
+    const { session, ids } = await threePerformances();
+
+    // 欠落（2 件だけ）
+    await expectApiError(
+      await reorderViaApi(session.id, [ids[0], ids[1]]),
+      400,
+      "VALIDATION_ERROR",
+    );
+    // 余剰（存在しない id を含む）
+    await expectApiError(
+      await reorderViaApi(session.id, [ids[0], ids[1], ids[2], 9999]),
+      400,
+      "VALIDATION_ERROR",
+    );
+    // 重複
+    await expectApiError(
+      await reorderViaApi(session.id, [ids[0], ids[0], ids[1]]),
+      400,
+      "VALIDATION_ERROR",
+    );
+  });
+
+  it("存在しないセッションは 404", async () => {
+    await expectApiError(
+      await reorderViaApi(9999, [1, 2, 3]),
+      404,
+      "NOT_FOUND",
+    );
   });
 });
