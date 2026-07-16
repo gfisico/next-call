@@ -37,6 +37,23 @@ describe("ThemeToggle (unit-06)", () => {
     expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe("false");
   });
 
+  it("保存値が無い状態のマウントでは localStorage に書き込まない（OS 追従を壊さない, docs §3-1）", async () => {
+    // OS ダーク（matches:true）だが未保存のユーザーを再現
+    vi.stubGlobal(
+      "matchMedia",
+      () => ({ matches: true }) as unknown as MediaQueryList,
+    );
+    const setItemSpy = vi.spyOn(window.localStorage, "setItem");
+
+    render(<ThemeToggle />);
+    // マウント時に DOM は OS 値へ同期されるが…
+    expect(document.documentElement.classList.contains("dark")).toBe(true);
+    // …localStorage には一切書き込まれない（＝以降も OS 追従が維持される）
+    expect(setItemSpy).not.toHaveBeenCalled();
+    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBeNull();
+    setItemSpy.mockRestore();
+  });
+
   it("aria-label が状態連動し、アイコン（Sun/Moon）が切り替わる (基準4)", async () => {
     const user = userEvent.setup();
     render(<ThemeToggle />);

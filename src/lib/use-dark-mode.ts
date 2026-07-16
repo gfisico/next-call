@@ -7,15 +7,16 @@
  * 判定条件・キーの真実源は theme.ts に集約（FOUC スクリプトと共有）。
  */
 import { useCallback, useEffect, useState } from "react";
-import { applyDark, getInitialDark } from "@/lib/theme";
+import { applyDark, getInitialDark, syncDomDark } from "@/lib/theme";
 
 export function useDarkMode() {
   const [isDark, setIsDark] = useState<boolean>(getInitialDark);
 
-  // マウント後に FOUC スクリプトが付けた実 DOM 状態と state を同期させる
-  // （hydration 時の初期値と実際の <html>.dark を一致させるため）。
+  // マウント後は DOM クラスの同期のみ行う（localStorage には書き込まない）。
+  // OS 由来の初期値を勝手に永続化すると以降 OS 変更に追従しなくなるため
+  // （docs/dark_mode.md §3-1）。永続化は toggle（ユーザー操作）に限定する。
   useEffect(() => {
-    applyDark(isDark);
+    syncDomDark(isDark);
     // 初期同期のみ。以降は toggle 経由で反映するため依存は空。
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

@@ -42,13 +42,24 @@ export function getInitialDark(): boolean {
 }
 
 /**
- * <html> への .dark 付け外しと localStorage への永続化を集約（docs §3-3）。
- * storage 例外は try/catch で握りつぶし、DOM 反映（機能）は止めない（docs §3-2）。
+ * <html> への .dark 付け外し（DOM 同期のみ、永続化はしない）。
+ * マウント時の同期など「ユーザー操作を伴わない反映」に使う（docs §3-1: OS 由来の
+ * 初期値を勝手に永続化しないため、書き込みと DOM 同期を分離する）。
  */
-export function applyDark(isDark: boolean): void {
+export function syncDomDark(isDark: boolean): void {
   if (typeof document !== "undefined") {
     document.documentElement.classList.toggle("dark", isDark);
   }
+}
+
+/**
+ * DOM 同期 ＋ localStorage 永続化を集約（docs §3-3）。ユーザーによる切替
+ * （toggle）でのみ呼び、初回マウントでは呼ばない（§3-1: OS はあくまで初回
+ * デフォルト、ユーザーが切り替えるまで追従）。
+ * storage 例外は try/catch で握りつぶし、DOM 反映（機能）は止めない（docs §3-2）。
+ */
+export function applyDark(isDark: boolean): void {
+  syncDomDark(isDark);
   try {
     window.localStorage.setItem(THEME_STORAGE_KEY, String(isDark));
   } catch {
