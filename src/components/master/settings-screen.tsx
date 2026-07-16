@@ -34,6 +34,7 @@ import {
   type SettingMeta,
 } from "@/lib/settings-meta";
 import { cn } from "@/lib/utils";
+import { APP_VERSION } from "@/version";
 
 const inputClass =
   "h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
@@ -309,6 +310,9 @@ export function SettingsScreen() {
           <Link href="/settings/import">CSVインポート →</Link>
         </Button>
       </section>
+
+      {/* バージョン（SSOT = src/version.ts。docs/version_number.md §1/§4） */}
+      <p className="text-xs text-muted-foreground">{APP_VERSION}</p>
     </div>
   );
 }
