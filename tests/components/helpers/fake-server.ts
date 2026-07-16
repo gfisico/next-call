@@ -179,8 +179,11 @@ export class FakeServer {
         hasListeners: Boolean(b.hasListeners),
         status: "ACTIVE",
         note: null,
+        listenerCount: null,
+        hostInstrumentCode: null,
         createdAt: "2026-07-12T10:00:00.000Z",
         performances: [],
+        participants: [],
       };
       this.active = session;
       return { status: 201, body: { session } };
