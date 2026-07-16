@@ -1,6 +1,6 @@
 ---
-status: in_progress
-last_updated: "2026-07-16T03:42:47Z"
+status: completed
+last_updated: "2026-07-16T04:01:37Z"
 depends_on: []
 branch: ai-dlc/next-call-enhancements/01-session-ops-api
 discipline: backend
