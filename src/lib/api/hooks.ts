@@ -9,16 +9,19 @@ import useSWR from "swr";
 import {
   ApiClientError,
   buildSongsQuery,
+  buildStatsQuery,
   fetchActiveSession,
   fetchGenreTags,
   fetchInstruments,
   fetchRecommendationDefaults,
   fetchSession,
   fetchSessions,
+  fetchStats,
   fetchVenues,
   getSettings,
   listSongs,
   searchSongs,
+  type StatsQueryParams,
 } from "./client";
 import type {
   GenreTag,
@@ -29,6 +32,7 @@ import type {
   SettingsMap,
   Song,
   SongListQuery,
+  StatsResponse,
   Venue,
 } from "./types";
 
@@ -45,6 +49,8 @@ export const SWR_KEYS = {
   songs: (query: SongListQuery = {}) => `/api/songs${buildSongsQuery(query)}`,
   recommendationDefaults: (id: number) =>
     `/api/sessions/${id}/recommendations/defaults`,
+  /** 統計はフィルタ（店/季節）ごとにキーを分ける（変更で自動再取得） */
+  stats: (params: StatsQueryParams = {}) => `/api/stats${buildStatsQuery(params)}`,
 } as const;
 
 /** 進行中セッション。無い場合（404）は null を正常値として返す */
@@ -122,6 +128,19 @@ export function useSongs(query: SongListQuery = {}) {
     isValidating,
     mutate,
   };
+}
+
+/**
+ * 統計（GET /api/stats）。店/季節フィルタを直列化した文字列を key にし、
+ * 変更で自動再取得する。keepPreviousData で切替中のちらつきを防ぐ（useSongs と同方針）。
+ */
+export function useStats(params: StatsQueryParams = {}) {
+  const { data, error, isLoading, isValidating, mutate } = useSWR<StatsResponse>(
+    SWR_KEYS.stats(params),
+    () => fetchStats(params),
+    { keepPreviousData: true },
+  );
+  return { stats: data ?? null, error, isLoading, isValidating, mutate };
 }
 
 /** 全設定（engine.* ほか）。ミューテーション後は mutate で再検証 */

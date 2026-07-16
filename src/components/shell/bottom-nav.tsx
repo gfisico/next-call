@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { href: "/", label: "セッション" },
   { href: "/suggest", label: "推薦" },
   { href: "/songs", label: "マスター" },
+  { href: "/stats", label: "統計" },
   { href: "/settings", label: "設定" },
 ] as const;
 
