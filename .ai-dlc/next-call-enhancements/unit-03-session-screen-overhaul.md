@@ -1,6 +1,6 @@
 ---
-status: pending
-last_updated: ""
+status: in_progress
+last_updated: "2026-07-16T04:29:43Z"
 depends_on: [unit-02-session-detail-schema-import-api]
 branch: ai-dlc/next-call-enhancements/03-session-screen-overhaul
 discipline: frontend
