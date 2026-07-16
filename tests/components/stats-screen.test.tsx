@@ -29,10 +29,15 @@ const VENUES = [
   { id: 2, name: "Bar ABC", isHome: false, createdAt: "2026-01-01T00:00:00.000Z" },
 ];
 
+// 指標ごとに順位が入れ替わるよう discriminating な値にする:
+// - callCount DESC（既定）: Stella(5) → Blue(3) → So What(1)
+// - appearanceCount DESC: Blue(9) → Stella(6) → So What(3)（先頭が入れ替わる）
+// - Blue は playCount=0 → 未演奏バッジ
 const STATS: StatsResponse = {
   songs: [
-    { songId: 1, title: "Stella By Starlight", callCount: 5, playCount: 8, lastPlayedDate: "2026-06-01" },
-    { songId: 2, title: "Blue In Green", callCount: 3, playCount: 4, lastPlayedDate: null },
+    { songId: 1, title: "Stella By Starlight", callCount: 5, playCount: 8, appearanceCount: 6 },
+    { songId: 2, title: "Blue In Green", callCount: 3, playCount: 0, appearanceCount: 9 },
+    { songId: 3, title: "So What", callCount: 1, playCount: 2, appearanceCount: 3 },
   ],
   distributions: {
     byGenre: [
@@ -55,6 +60,22 @@ const EMPTY_STATS: StatsResponse = {
   distributions: { byGenre: [], byKey: [], byForm: [] },
   trends: { bySeason: [], byVenue: [], byHome: { home: 0, nonHome: 0 } },
   monthly: [],
+};
+
+// 曲別だけが 0 件（分布/月別は残る）→ S2 の「該当する曲がありません」用
+const SONGS_EMPTY_STATS: StatsResponse = {
+  songs: [],
+  distributions: {
+    byGenre: [{ key: "バラード", count: 4 }],
+    byKey: [{ key: "B♭", count: 3 }],
+    byForm: [{ key: "AABA", count: 5 }],
+  },
+  trends: {
+    bySeason: [{ season: "SUMMER", count: 6 }],
+    byVenue: [{ venueId: 1, venueName: "Jazz Spot XYZ", count: 7 }],
+    byHome: { home: 5, nonHome: 2 },
+  },
+  monthly: [{ month: "2026-06", songsPlayed: 10, newSongRate: 0.3, diversity: 0.8 }],
 };
 
 interface RouteOpts {
@@ -99,8 +120,6 @@ describe("StatsScreen (unit-05)", () => {
     // 曲別ランキング
     expect(await screen.findByText("Stella By Starlight")).toBeInTheDocument();
     expect(screen.getByText("Blue In Green")).toBeInTheDocument();
-    // 久しぶりバッジ（最終演奏日ありの曲）
-    expect(screen.getAllByText("久しぶり").length).toBeGreaterThan(0);
 
     // 分布ラベル
     expect(screen.getByText("バラード")).toBeInTheDocument();
@@ -113,6 +132,91 @@ describe("StatsScreen (unit-05)", () => {
     // 月別推移
     expect(screen.getByText("2026-06")).toBeInTheDocument();
     expect(screen.getByText("30%")).toBeInTheDocument();
+  });
+
+  // 要件2/3: 3指標列があり、最終演奏日列は無い
+  it("コール回数/演奏回数/登場回数 の3指標列を表示し、最終演奏日列は無い", async () => {
+    setup();
+    await screen.findByText("Stella By Starlight");
+
+    // ソート可能な指標ヘッダ（button）
+    expect(
+      screen.getByRole("button", { name: "コール回数" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "演奏回数" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "登場回数" }),
+    ).toBeInTheDocument();
+
+    // 久しぶり・最終演奏日は撤去済み
+    expect(screen.queryByText("最終演奏日")).not.toBeInTheDocument();
+    expect(screen.queryByText("久しぶり")).not.toBeInTheDocument();
+  });
+
+  // 要件3: 未演奏（playCount===0）の曲に未演奏バッジが付く
+  it("playCount===0 の曲に未演奏バッジが付く", async () => {
+    setup();
+    await screen.findByText("Blue In Green");
+    // Blue In Green のみ playCount=0
+    expect(screen.getAllByText("未演奏")).toHaveLength(1);
+  });
+
+  // 要件3: 指標ヘッダのクリックで降順ソートが並び替わる（既定=コール回数）
+  it("登場回数ヘッダをクリックすると登場回数の降順で並び替わる", async () => {
+    const user = userEvent.setup();
+    setup();
+    const stella = await screen.findByText("Stella By Starlight");
+    const blue = screen.getByText("Blue In Green");
+
+    // 既定（コール回数 DESC）: Stella(5) が Blue(3) より前
+    expect(
+      stella.compareDocumentPosition(blue) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: "登場回数" }));
+
+    // 登場回数 DESC: Blue(9) が Stella(6) より前（先頭が入れ替わる）
+    await waitFor(() =>
+      expect(
+        blue.compareDocumentPosition(stella) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy(),
+    );
+    // アクティブ列は aria-sort=descending
+    const col = screen.getByRole("columnheader", { name: /登場回数/ });
+    expect(col).toHaveAttribute("aria-sort", "descending");
+  });
+
+  // 要件4: 閾値セレクト変更で lastPlayedBefore クエリが送られる
+  it("最終演奏日の閾値を選ぶと stats fetch に lastPlayedBefore が付く", async () => {
+    const user = userEvent.setup();
+    const fetchMock = setup();
+    await screen.findByText("Stella By Starlight");
+
+    await user.selectOptions(
+      screen.getByLabelText("最終演奏日で絞り込み"),
+      "3m",
+    );
+
+    await waitFor(() =>
+      expect(calledWith(fetchMock, "lastPlayedBefore=")).toBe(true),
+    );
+  });
+
+  // 要件4 / S2: 曲別だけ 0 件のときは「該当する曲がありません」（全体空とは別扱い）
+  it("曲別が0件（分布は残る）なら該当する曲がありませんを表示する", async () => {
+    setup({ stats: SONGS_EMPTY_STATS });
+
+    expect(
+      await screen.findByText("該当する曲がありません"),
+    ).toBeInTheDocument();
+    // 分布は残っているので全体空メッセージは出さない
+    expect(
+      screen.queryByText(/該当するデータがありません/),
+    ).not.toBeInTheDocument();
   });
 
   // criterion 2: 季節フィルタ変更 → season=SUMMER で再取得

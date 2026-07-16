@@ -107,13 +107,18 @@ export function getStats(
   const countExpr = sql<number>`count(*)`;
 
   // --- 曲別（3-A） ---------------------------------------------------------
+  // lastPlayedExpr（participated の最終演奏日）はレスポンスには載せないが、
+  // lastPlayedBefore フィルタの HAVING 判定に使う（NULL=未演奏は比較で自動除外）。
+  const havingCond = filter.lastPlayedBefore
+    ? sql`${lastPlayedExpr} <= ${filter.lastPlayedBefore}`
+    : undefined;
   const songRows = dbx
     .select({
       songId: performances.songId,
       title: songs.title,
       callCount: callCountExpr,
       playCount: playCountExpr,
-      lastPlayedDate: lastPlayedExpr,
+      appearanceCount: countExpr,
     })
     .from(performances)
     .innerJoin(sessions, eq(performances.sessionId, sessions.id))
@@ -121,6 +126,7 @@ export function getStats(
     .innerJoin(songs, eq(performances.songId, songs.id))
     .where(where)
     .groupBy(performances.songId, songs.title)
+    .having(havingCond)
     .orderBy(desc(callCountExpr), asc(performances.songId))
     .all();
   const songStats: StatsSongStat[] = songRows.map((r) => ({
@@ -128,7 +134,7 @@ export function getStats(
     title: r.title,
     callCount: r.callCount,
     playCount: r.playCount,
-    lastPlayedDate: r.lastPlayedDate,
+    appearanceCount: r.appearanceCount,
   }));
 
   // --- 分布（3-B）: フィルタ下の演奏件数カウント --------------------------

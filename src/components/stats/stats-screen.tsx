@@ -39,6 +39,49 @@ const SEASON_OPTIONS: SegmentOption<Season>[] = [
 const filterSelectClass =
   "h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
 
+/** 曲別テーブルのソート指標（すべて降順・クライアント側） */
+type SortKey = "callCount" | "playCount" | "appearanceCount";
+
+const METRIC_COLUMNS: { key: SortKey; label: string }[] = [
+  { key: "callCount", label: "コール回数" },
+  { key: "playCount", label: "演奏回数" },
+  { key: "appearanceCount", label: "登場回数" },
+];
+
+/** 「最終演奏日」閾値プリセット（日数ベース・「なし」は絞り込み無し） */
+type ThresholdKey = "none" | "3m" | "6m" | "1y" | "2y";
+
+const THRESHOLD_OPTIONS: { value: ThresholdKey; label: string; days?: number }[] =
+  [
+    { value: "none", label: "なし" },
+    { value: "3m", label: "3ヶ月", days: 90 },
+    { value: "6m", label: "半年", days: 180 },
+    { value: "1y", label: "1年", days: 365 },
+    { value: "2y", label: "2年", days: 730 },
+  ];
+
+/**
+ * JST（Asia/Tokyo）の「今日」から days 日前の日付（YYYY-MM-DD）を返す。
+ * session_date は JST 基準（src/db/schema.ts）のため今日も JST で求め、
+ * 日跨ぎ/月末の曖昧さを避けるため日数ベースで一律に遡る。
+ */
+function jstCutoffDate(days: number): string {
+  const jstToday = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Tokyo",
+  }).format(new Date());
+  const [y, m, d] = jstToday.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  dt.setUTCDate(dt.getUTCDate() - days);
+  return dt.toISOString().slice(0, 10);
+}
+
+/** 閾値プリセット → lastPlayedBefore（「なし」は undefined） */
+function thresholdToCutoff(threshold: ThresholdKey): string | undefined {
+  const opt = THRESHOLD_OPTIONS.find((o) => o.value === threshold);
+  if (!opt?.days) return undefined;
+  return jstCutoffDate(opt.days);
+}
+
 /** セクション見出し + 本文の共通ラッパ（design_rule §6.2 のカード） */
 function Section({
   title,
@@ -81,21 +124,28 @@ function SubBlock({
 export function StatsScreen() {
   const [venue, setVenue] = useState<VenueFilter>("all");
   const [season, setSeason] = useState<Season>("ALL");
+  const [threshold, setThreshold] = useState<ThresholdKey>("none");
+  const [sortKey, setSortKey] = useState<SortKey>("callCount");
 
-  const { stats, error, isLoading, mutate } = useStats({ venue, season });
+  const lastPlayedBefore = thresholdToCutoff(threshold);
+  const { stats, error, isLoading, mutate } = useStats({
+    venue,
+    season,
+    lastPlayedBefore,
+  });
   const { venues } = useVenues();
 
-  // 「久しぶりの曲」: 最終演奏日が古い順（未演奏は除外）に上位 5 件を導出
-  const rareSongIds = useMemo(() => {
-    if (!stats) return new Set<number>();
-    const played = stats.songs
-      .filter((s) => s.lastPlayedDate != null)
-      .sort((a, b) =>
-        (a.lastPlayedDate as string).localeCompare(b.lastPlayedDate as string),
-      )
-      .slice(0, 5);
-    return new Set(played.map((s) => s.songId));
-  }, [stats]);
+  // クライアント側ソート: 選択指標 DESC → callCount DESC → songId ASC（安定）
+  const sortedSongs = useMemo(() => {
+    if (!stats) return [];
+    return [...stats.songs].sort((a, b) => {
+      const byMetric = b[sortKey] - a[sortKey];
+      if (byMetric !== 0) return byMetric;
+      const byCall = b.callCount - a.callCount;
+      if (byCall !== 0) return byCall;
+      return a.songId - b.songId;
+    });
+  }, [stats, sortKey]);
 
   const onVenueChange = (value: string) => {
     if (value === "all" || value === "home" || value === "non_home") {
@@ -187,38 +237,92 @@ export function StatsScreen() {
           {/* 1. 曲別ランキング */}
           <Section
             title="曲別"
-            description="コール回数の多い順。久しぶりの曲にはバッジを表示します。"
+            description="登場実績のある曲。指標のヘッダをクリックすると降順で並び替えます。"
           >
-            {rareSongIds.size > 0 ? (
+            {/* 最終演奏日での絞り込み（曲別リストのみに適用） */}
+            <div className="grid gap-2 sm:max-w-xs">
+              <label
+                htmlFor="stats-last-played"
+                className="text-sm font-medium text-foreground"
+              >
+                最終演奏日で絞り込み
+              </label>
+              <select
+                id="stats-last-played"
+                aria-label="最終演奏日で絞り込み"
+                value={threshold}
+                onChange={(e) => setThreshold(e.target.value as ThresholdKey)}
+                className={filterSelectClass}
+              >
+                {THRESHOLD_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
               <p className="text-xs text-muted-foreground">
-                <Badge variant="info" className="mr-1 align-middle">
-                  久しぶり
-                </Badge>
-                最終演奏日が最も古い曲（上位5件）
+                選択した期間より前に最後に演奏した曲だけを表示します（この曲別リストにのみ適用）。
               </p>
-            ) : null}
-            {stats.songs.length === 0 ? (
-              <p className="text-xs text-muted-foreground">データがありません</p>
+            </div>
+
+            {sortedSongs.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                該当する曲がありません
+              </p>
             ) : (
               <div className="overflow-x-auto rounded-lg border border-border">
                 <Table className="min-w-full text-sm">
                   <TableHeader className="bg-muted/50">
                     <TableRow>
                       <TableHead className="text-left">曲名</TableHead>
-                      <TableHead className="text-right">コール</TableHead>
-                      <TableHead className="text-right">演奏</TableHead>
-                      <TableHead className="text-right">最終演奏日</TableHead>
+                      {METRIC_COLUMNS.map((col) => {
+                        const active = sortKey === col.key;
+                        return (
+                          <TableHead
+                            key={col.key}
+                            className="p-0 text-right"
+                            aria-sort={active ? "descending" : "none"}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => setSortKey(col.key)}
+                              aria-pressed={active}
+                              className="inline-flex h-10 w-full items-center justify-end gap-1 px-2 outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                            >
+                              <span
+                                className={
+                                  active
+                                    ? "font-semibold text-foreground"
+                                    : "text-muted-foreground"
+                                }
+                              >
+                                {col.label}
+                              </span>
+                              <span
+                                aria-hidden="true"
+                                className={
+                                  active
+                                    ? "text-foreground"
+                                    : "text-transparent"
+                                }
+                              >
+                                ▼
+                              </span>
+                            </button>
+                          </TableHead>
+                        );
+                      })}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {stats.songs.map((s) => (
+                    {sortedSongs.map((s) => (
                       <TableRow key={s.songId} className="hover:bg-accent/50">
-                        <TableCell className="align-top">
+                        <TableCell className="align-middle">
                           <span className="flex items-center gap-1.5">
                             <span className="truncate">{s.title}</span>
-                            {rareSongIds.has(s.songId) ? (
-                              <Badge variant="info" className="shrink-0">
-                                久しぶり
+                            {s.playCount === 0 ? (
+                              <Badge variant="neutral" className="shrink-0">
+                                未演奏
                               </Badge>
                             ) : null}
                           </span>
@@ -229,8 +333,8 @@ export function StatsScreen() {
                         <TableCell className="text-right font-mono tabular-nums">
                           {s.playCount}
                         </TableCell>
-                        <TableCell className="text-right whitespace-nowrap">
-                          {s.lastPlayedDate ?? "—"}
+                        <TableCell className="text-right font-mono tabular-nums">
+                          {s.appearanceCount}
                         </TableCell>
                       </TableRow>
                     ))}
