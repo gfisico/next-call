@@ -107,7 +107,7 @@ async function callStats(c: C, query = ""): Promise<StatsResponse> {
 }
 
 describe("GET /api/stats: 曲別集計", () => {
-  it("callCount=called_by_me 合計 / playCount=participated 合計 / lastPlayedDate=participated の最大日", async () => {
+  it("callCount=called_by_me 合計 / playCount=participated 合計 / appearanceCount=全登場回数", async () => {
     const c = await ctx();
     const home = insertVenue(c, "某店", true);
     const song = insertSong(c, "Song A");
@@ -121,7 +121,7 @@ describe("GET /api/stats: 曲別集計", () => {
       participated: true,
       calledByMe: true,
     });
-    // より新しいが不参加 → lastPlayedDate は 2026-06-10 のまま・callCount には加算
+    // より新しいが不参加 → playCount には非加算・callCount / appearanceCount には加算
     insertPerf(c, { sessionId: s3.id, songId: song.id, calledByMe: true });
 
     const stats = await callStats(c);
@@ -131,7 +131,7 @@ describe("GET /api/stats: 曲別集計", () => {
       title: "Song A",
       callCount: 2,
       playCount: 2,
-      lastPlayedDate: "2026-06-10",
+      appearanceCount: 3,
     });
   });
 
@@ -209,6 +209,80 @@ describe("GET /api/stats: from/to 期間フィルタ", () => {
     const ranged = await callStats(c, "?from=2026-05-01&to=2026-08-31");
     expect(ranged.songs[0].callCount).toBe(1);
     expect(ranged.monthly.map((m) => m.month)).toEqual(["2026-07"]);
+  });
+});
+
+describe("GET /api/stats: lastPlayedBefore フィルタ（HAVING・曲別のみ）", () => {
+  /**
+   * 共通データセット:
+   * - Old: participated 2026-01-10（古い）
+   * - W3: participated 2026-01-05（古い） + より新しい非参加登場 2026-07-01
+   *   → 最終「演奏」日は participated 基準の 2026-01-05 のまま
+   * - Recent: participated 2026-07-01（新しい）
+   * - Never: 2026-02-01 に登場するが participated=false（未演奏）
+   */
+  function seedLastPlayed(c: C) {
+    const home = insertVenue(c, "某店", true);
+    const old = insertSong(c, "Old");
+    const w3 = insertSong(c, "W3");
+    const recent = insertSong(c, "Recent");
+    const never = insertSong(c, "Never");
+
+    const s0110 = insertSession(c, "2026-01-10", home.id);
+    const s0105 = insertSession(c, "2026-01-05", home.id);
+    const s0201 = insertSession(c, "2026-02-01", home.id);
+    const s0701 = insertSession(c, "2026-07-01", home.id);
+
+    insertPerf(c, { sessionId: s0110.id, songId: old.id, participated: true });
+    // W3: 古い参加 + 新しい非参加登場
+    insertPerf(c, { sessionId: s0105.id, songId: w3.id, participated: true });
+    insertPerf(c, { sessionId: s0701.id, songId: w3.id, participated: false });
+    insertPerf(c, {
+      sessionId: s0701.id,
+      songId: recent.id,
+      participated: true,
+    });
+    insertPerf(c, {
+      sessionId: s0201.id,
+      songId: never.id,
+      participated: false,
+    });
+    return { old, w3, recent, never };
+  }
+
+  it("最終演奏日（participated 基準）が閾値以前の曲のみに絞る / 未演奏(NULL)を除外する / W3 は新しい登場があっても捕まる", async () => {
+    const c = await ctx();
+    const { old, w3, recent, never } = seedLastPlayed(c);
+
+    const filtered = await callStats(c, "?lastPlayedBefore=2026-03-01");
+    const ids = filtered.songs.map((s) => s.songId).sort((a, b) => a - b);
+
+    // Old と W3 は participated 最終日が閾値以前 → 含まれる
+    expect(ids).toEqual([old.id, w3.id].sort((a, b) => a - b));
+    // W3: 2026-07-01 の非参加登場があっても participated 基準（2026-01-05）で捕まる
+    expect(filtered.songs.some((s) => s.songId === w3.id)).toBe(true);
+    // Recent は participated 最終日 2026-07-01 が閾値より後 → 除外
+    expect(filtered.songs.some((s) => s.songId === recent.id)).toBe(false);
+    // Never は participated 履歴なし（HAVING の比較で NULL）→ 除外
+    expect(filtered.songs.some((s) => s.songId === never.id)).toBe(false);
+  });
+
+  it("W1: lastPlayedBefore は分布/傾向/月別に影響せず、曲別リストのみが変わる", async () => {
+    const c = await ctx();
+    seedLastPlayed(c);
+
+    const without = await callStats(c);
+    const withFilter = await callStats(c, "?lastPlayedBefore=2026-03-01");
+
+    // 曲別（3-A）だけが絞られる
+    expect(withFilter.songs.length).toBeLessThan(without.songs.length);
+    expect(without.songs.length).toBe(4);
+    expect(withFilter.songs.length).toBe(2);
+
+    // 分布/傾向/月別は HAVING の影響を受けず不変
+    expect(withFilter.distributions).toEqual(without.distributions);
+    expect(withFilter.trends).toEqual(without.trends);
+    expect(withFilter.monthly).toEqual(without.monthly);
   });
 });
 
