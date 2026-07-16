@@ -72,7 +72,7 @@ MVP のドメインモデル（Song / GenreTag / Instrument / Venue / Session / 
 
 - 要件3 曲順 → 既存 `Performance.order_index`
 - 要件5 セッション編集 → 既存 `session_date` / `venue_id`
-- 要件4 削除 → cascade 手動削除（candidates→requests→front_instruments→performances→session）
+- 要件4 削除 → cascade 手動削除（candidates→requests→front_instruments→performances→**session_participants**→session）。foreign_keys=ON のため参照テーブルを漏れなく削除する
 - 要件8/9 → DB 非対象
 
 ### 既存資産の再利用
@@ -91,7 +91,7 @@ MVP のドメインモデル（Song / GenreTag / Instrument / Venue / Session / 
 - [ ] セッション画面から推薦履歴へ戻る導線が動作する（推薦画面と同等）
 - [ ] セットリストのフロント編成が「as, ts」カンマ区切りで表示される（内部 position 順は保持）
 - [ ] セットリストの曲順（order_index）を編集して保存でき、表示・「直前の曲」判定に反映される
-- [ ] セッションを確認ダイアログ経由で物理削除でき、紐づく Performance・推薦履歴・フロント編成が全て削除される（pending_songs は残る）
+- [ ] セッションを確認ダイアログ経由で物理削除でき、紐づく Performance・推薦履歴・フロント編成・session_participants が全て削除される（pending_songs は残る）
 - [ ] セッションの日付・店舗を後から修正して保存できる
 - [ ] 統計画面で「曲別コール/演奏回数・最終演奏日」「ジャンル/キー/構成の分布」「季節別/店別/母店別の傾向」「月別推移」が表示され、店/母店・季節で絞り込める
 - [ ] セッションにパート別参加者数（`session_participants`）・リスナー数・ホストパートを記録でき、既存メモ形式のテキストを一括パース→プレビュー補正→取込できる

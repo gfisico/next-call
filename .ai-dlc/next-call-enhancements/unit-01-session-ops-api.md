@@ -34,23 +34,24 @@ backend - API ルート（`src/app/api`）・リポジトリ（`src/server/repos
 以下のサーバ機能を追加する（既存のAPIルート規約・エラー整形・認可ガードに合わせる）:
 
 1. **セッション更新** `PATCH /api/sessions/:id`
-   - body: `{ session_date?, venue_id? }`。日付は妥当な日付、venue_id は既存 Venue のみ。
-   - リポジトリ: `updateSession(id, { session_date, venue_id })`。
+   - body（camelCase、既存 `src/server/validation/sessions.ts` の `sessionDate`/`venueId`/`hasListeners` 規約に合わせる）: `{ sessionDate?, venueId? }`。日付は妥当な日付、venueId は既存 Venue のみ。
+   - リポジトリ: `updateSession(id, { sessionDate, venueId })`。
 2. **セッション物理削除** `DELETE /api/sessions/:id`
    - 単一トランザクション内で cascade 削除: `recommendation_candidates` → `recommendation_requests` → `performance_front_instruments` → `performances` → `sessions`。
+   - **cascade 対象は「その時点で sessions を FK 参照する全テーブル」であること**（`src/db/schema.ts` を確認して漏れなく列挙する）。本ユニット構築時点の参照テーブルは上記のみだが、unit-02 が `session_participants`（`session_id` FK・notNull）を追加する。unit-02 側で本削除ロジックに `session_participants` を組み込む責務を負う（下記 Boundaries 参照）。
    - `pending_songs` は削除しない（横断保持）。
    - リポジトリ: `deleteSessionCascade(id)`。削除件数を返す。
 3. **曲順並べ替え** `PATCH /api/sessions/:id/performances/order`
-   - body: `{ order: number[] }`（performance_id の新しい並び）または `{ items: [{id, order_index}] }`。既存APIの命名慣習に合わせて決定。
-   - 同一セッション内の全 Performance の `order_index` を 0..N-1 で連番再割当（トランザクション）。
+   - body: `{ order: number[] }`（performance_id の新しい並び）。既存APIの命名慣習（camelCase）に合わせる。
+   - 同一セッション内の全 Performance の `order_index` を **1..N** で連番再割当（トランザクション）。既存 `deletePerformance`（1..N 再採番）・`addPerformance`（max+1）と採番基準を揃える。
    - リポジトリ: `reorderPerformances(sessionId, orderedIds)`。渡された id 集合がセッションの全 performance と一致することを検証（欠落・余剰はエラー）。
 
 すべて認可（許可メールのみ）配下に置き、対象リソースの存在確認と 404/400 応答を返す。
 
 ## Success Criteria
-- [ ] `PATCH /api/sessions/:id` で日付・店舗を更新でき、不正な venue_id / 日付は 400 を返す
-- [ ] `DELETE /api/sessions/:id` がトランザクションで candidates→requests→front_instruments→performances→session を削除し、pending_songs は残す
-- [ ] `PATCH .../performances/order` が同一セッション全 performance の order_index を連番再割当し、id 集合不一致時はエラーを返す
+- [ ] `PATCH /api/sessions/:id` で日付・店舗を更新でき、不正な venueId / 日付は 400 を返す（body は camelCase）
+- [ ] `DELETE /api/sessions/:id` がトランザクションで candidates→requests→front_instruments→performances→session を削除し、pending_songs は残す（unit-02 完了後は session_participants も含む）
+- [ ] `PATCH .../performances/order` が同一セッション全 performance の order_index を **1..N** で連番再割当し、id 集合不一致時はエラーを返す
 - [ ] 並べ替え後も「直前の曲＝order_index 最大行」の判定が正しく機能する（リポジトリ単体テストで検証）
 - [ ] 追加した3機能にリポジトリ/バリデーションのテストがあり、typecheck / lint / test / build がパスする
 
@@ -60,7 +61,7 @@ backend - API ルート（`src/app/api`）・リポジトリ（`src/server/repos
 - **既存 seed/インポートの order 前提**: Mitigation: 既存 performance 生成箇所の order_index 採番と整合を確認。
 
 ## Boundaries
-UI は一切含まない（操作メニュー・確認ダイアログ・曲順編集UIは unit-03）。参加者/ホスト/メモの記録・メモ移行は扱わない（unit-02）。統計は扱わない（unit-04）。
+UI は一切含まない（操作メニュー・確認ダイアログ・曲順編集UIは unit-03）。参加者/ホスト/メモの記録・メモ移行は扱わない（unit-02）。統計は扱わない（unit-04）。`session_participants` テーブルは unit-02 が新設し、削除 cascade への組み込みも unit-02 が担う（本ユニットの `deleteSessionCascade` は unit-02 が拡張する前提で、参照テーブルを漏れなく削除する構造にしておく）。
 
 ## Notes
 - 既存 API ルートの実装パターン（`src/app/api/**`）とリポジトリ関数のシグネチャ規約を踏襲する。

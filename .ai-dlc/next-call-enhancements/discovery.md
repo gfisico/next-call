@@ -91,8 +91,9 @@ docs/version_number.md（新規）, docs/dark_mode.md（新規）
     子から順に手動削除が必要。
 - **変更方針**
   - `deleteSession(id)` をトランザクションで実装。削除順: candidates → requests →
-    front_instruments → performances → session（`performanceFrontInstruments` は
-    performance_id in (…) で一括）。`pending_songs` はセッション横断保持なので**削除しない**（決定事項）。
+    front_instruments → performances → **session_participants**（unit-02 で追加、`session_id` FK・notNull）→ session
+    （`performanceFrontInstruments` は performance_id in (…) で一括）。`pending_songs` はセッション横断保持なので**削除しない**（決定事項）。
+    **注意**: `src/db/client.ts` で `foreign_keys = ON`。unit-02 が追加する `session_participants` を削除しないと、参加者のあるセッション削除が FK 違反になる。unit-01 で構造を用意し、unit-02 が cascade に組み込む。
   - `DELETE /api/sessions/[id]` 追加（204）。UI は操作メニューに「セッションを削除」を追加し
     ConfirmDialog（confirmVariant="destructive"）。削除後は `/sessions` か `/` へ遷移＋SWR 再検証。
 
