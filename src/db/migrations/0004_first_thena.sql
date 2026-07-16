@@ -8,4 +8,5 @@ CREATE TABLE `session_participants` (
 );
 --> statement-breakpoint
 ALTER TABLE `sessions` ADD `host_instrument_code` text REFERENCES instruments(code);--> statement-breakpoint
-ALTER TABLE `sessions` ADD `listener_count` integer;
+ALTER TABLE `sessions` ADD `listener_count` integer;--> statement-breakpoint
+INSERT OR IGNORE INTO `instruments` (`code`, `label`, `sort_order`) VALUES ('pf','ピアノ',13),('b','ベース',14),('ds','ドラム',15);
