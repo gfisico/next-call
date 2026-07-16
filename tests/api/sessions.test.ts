@@ -349,6 +349,71 @@ describe("DELETE /api/sessions/:id", () => {
     ).toHaveLength(1);
   });
 
+  it("session_participants を持つセッションを FK 違反なく cascade 削除できる（unit-02 SC#3）", async () => {
+    const venue = await createVenue();
+    const { session } = await (
+      await startSessionViaApi({ venueId: venue.id })
+    ).json();
+    const song = await createSong("Solar");
+
+    // pending_songs（セッション横断保持の対象。cascade で残ること）
+    const { addPendingSong } = await import(
+      "@/server/repositories/pending-songs"
+    );
+    addPendingSong(song.id);
+
+    // 参加者を登録
+    const { PUT } = await import(
+      "@/app/api/sessions/[id]/participants/route"
+    );
+    await PUT(
+      jsonRequest(`/api/sessions/${session.id}/participants`, "PUT", {
+        participants: [
+          { instrumentCode: "pf", count: 2 },
+          { instrumentCode: "b", count: 3 },
+        ],
+        listenerCount: 2,
+        hostInstrumentCode: "pf",
+      }),
+      routeParams({ id: String(session.id) }),
+    );
+
+    const { getDb } = await import("@/db/client");
+    const { sessions, sessionParticipants, pendingSongs } = await import(
+      "@/db/schema"
+    );
+    const db = getDb();
+    expect(
+      db
+        .select()
+        .from(sessionParticipants)
+        .where(eq(sessionParticipants.sessionId, session.id))
+        .all(),
+    ).toHaveLength(2);
+
+    const { DELETE } = await sessionByIdRoute();
+    const res = await DELETE(
+      jsonRequest(`/api/sessions/${session.id}`, "DELETE"),
+      routeParams({ id: String(session.id) }),
+    );
+    expect(res.status).toBe(204);
+
+    // participants は消え、session も消える。pending_songs は残る
+    expect(
+      db
+        .select()
+        .from(sessionParticipants)
+        .where(eq(sessionParticipants.sessionId, session.id))
+        .all(),
+    ).toHaveLength(0);
+    expect(
+      db.select().from(sessions).where(eq(sessions.id, session.id)).all(),
+    ).toHaveLength(0);
+    expect(
+      db.select().from(pendingSongs).where(eq(pendingSongs.songId, song.id)).all(),
+    ).toHaveLength(1);
+  });
+
   it("存在しない id は 404", async () => {
     const { DELETE } = await sessionByIdRoute();
     const res = await DELETE(

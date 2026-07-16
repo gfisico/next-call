@@ -66,14 +66,18 @@ describe("db:migrate + db:seed", () => {
     expect(rows).toHaveLength(9);
   });
 
-  it("楽器12種が投入される（コード一致）", () => {
+  it("楽器シード（フロント12種 + リズム隊3種）が投入される（コード一致）", () => {
     const rows = handle.sqlite
       .prepare("SELECT code FROM instruments ORDER BY sort_order")
       .all() as Array<{ code: string }>;
     expect(rows.map((r) => r.code)).toEqual(
       INSTRUMENT_SEEDS.map((s) => s.code),
     );
-    expect(rows).toHaveLength(12);
+    expect(rows).toHaveLength(INSTRUMENT_SEEDS.length);
+    // unit-02: リズム隊 pf/b/ds が含まれる
+    expect(rows.map((r) => r.code)).toEqual(
+      expect.arrayContaining(["pf", "b", "ds"]),
+    );
   });
 
   it("engine.* 設定が Provisional Values どおり投入される", () => {

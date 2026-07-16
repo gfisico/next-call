@@ -23,12 +23,12 @@ afterEach(() => {
 });
 
 describe("GET/POST /api/instruments", () => {
-  it("シード12種が sort_order 順で返る", async () => {
+  it("シード（フロント12種 + リズム隊3種）が sort_order 順で返る", async () => {
     const { GET } = await import("@/app/api/instruments/route");
     const res = await GET();
     expect(res.status).toBe(200);
     const { instruments } = await res.json();
-    expect(instruments).toHaveLength(12);
+    expect(instruments).toHaveLength(INSTRUMENT_SEEDS.length);
     expect(instruments.map((i: { code: string }) => i.code)).toEqual(
       INSTRUMENT_SEEDS.map((s) => s.code),
     );
@@ -41,11 +41,12 @@ describe("GET/POST /api/instruments", () => {
     );
     expect(res.status).toBe(201);
     const { instrument } = await res.json();
-    expect(instrument).toMatchObject({ code: "vib", sortOrder: 13 });
+    const nextSortOrder = INSTRUMENT_SEEDS.length + 1;
+    expect(instrument).toMatchObject({ code: "vib", sortOrder: nextSortOrder });
 
     const list = await (await GET()).json();
-    expect(list.instruments).toHaveLength(13);
-    expect(list.instruments[12].code).toBe("vib");
+    expect(list.instruments).toHaveLength(INSTRUMENT_SEEDS.length + 1);
+    expect(list.instruments[INSTRUMENT_SEEDS.length].code).toBe("vib");
   });
 
   it("code 重複は 409、label 欠落は 400", async () => {

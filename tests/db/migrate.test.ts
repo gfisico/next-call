@@ -34,6 +34,7 @@ describe("runMigrations", () => {
         "sessions",
         "performances",
         "performance_front_instruments",
+        "session_participants",
         "recommendation_requests",
         "recommendation_candidates",
         "pending_songs",
