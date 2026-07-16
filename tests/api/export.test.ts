@@ -27,6 +27,7 @@ const EXPORT_TABLE_KEYS = [
   "instruments",
   "venues",
   "sessions",
+  "session_participants",
   "performances",
   "performance_front_instruments",
   "recommendation_requests",
@@ -49,7 +50,7 @@ describe("GET /api/export", () => {
     expect(body.schema_version).not.toBe("unknown");
     // シード分
     expect(body.genre_tags).toHaveLength(9);
-    expect(body.instruments).toHaveLength(12);
+    expect(body.instruments).toHaveLength(15); // フロント12 + リズム隊3（unit-02）
     expect(body.settings.length).toBeGreaterThan(0);
   });
 

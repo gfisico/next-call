@@ -1,7 +1,7 @@
 /**
  * 全データエクスポート（operable: バックアップと独立したユーザー主導の復旧手段）
  *
- * 全12テーブルを単一 JSON に含める。テーブルを追加した場合はここにも追加すること
+ * 全13テーブルを単一 JSON に含める。テーブルを追加した場合はここにも追加すること
  * （tests/api/export.test.ts の EXPORT_TABLE_KEYS が網羅を検証している）。
  *
  * 例外: import_jobs（unit-08）は意図的に除外する（transient work table。
@@ -20,6 +20,7 @@ import {
   performances,
   recommendationCandidates,
   recommendationRequests,
+  sessionParticipants,
   sessions,
   settings,
   songGenreTags,
@@ -49,6 +50,7 @@ export interface ExportPayload {
   instruments: unknown[];
   venues: unknown[];
   sessions: unknown[];
+  session_participants: unknown[];
   performances: unknown[];
   performance_front_instruments: unknown[];
   recommendation_requests: unknown[];
@@ -68,6 +70,7 @@ export function exportAll(dbx: DbOrTx = getDb()): ExportPayload {
     instruments: dbx.select().from(instruments).all(),
     venues: dbx.select().from(venues).all(),
     sessions: dbx.select().from(sessions).all(),
+    session_participants: dbx.select().from(sessionParticipants).all(),
     performances: dbx.select().from(performances).all(),
     performance_front_instruments: dbx
       .select()
