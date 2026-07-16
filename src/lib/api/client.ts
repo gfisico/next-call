@@ -28,6 +28,7 @@ import type {
   RecommendationRequestPayload,
   RecommendationResult,
   ResolutionsPayload,
+  Season,
   SessionDetail,
   SessionParticipantsPayload,
   SessionPatchPayload,
@@ -37,6 +38,7 @@ import type {
   Song,
   SongListQuery,
   SongUpsertPayload,
+  StatsResponse,
   Venue,
   VenueCreatePayload,
   VenueUpdatePayload,
@@ -315,6 +317,40 @@ export const fetchGenreTags = () =>
   apiFetch<{ genreTags: GenreTag[] }>("/api/genre-tags").then(
     (b) => b.genreTags,
   );
+
+// --- 統計（unit-04 API・unit-05 統計画面） --------------------------------
+
+/** GET /api/stats のクエリパラメータ（すべて任意） */
+export interface StatsQueryParams {
+  /** 店フィルタ。"all" | "home" | "non_home" | 正の整数 venueId（既定 "all"） */
+  venue?: "all" | "home" | "non_home" | number;
+  /** 季節フィルタ。"ALL" は全期間扱い → クエリから省略 */
+  season?: Season;
+  /** 期間下限（YYYY-MM-DD） */
+  from?: string;
+  /** 期間上限（YYYY-MM-DD） */
+  to?: string;
+}
+
+/**
+ * GET /api/stats のクエリ文字列を組み立てる。
+ * 既定値（venue=all / season=ALL）は省略し URL をクリーンに保つ。
+ */
+export function buildStatsQuery(params: StatsQueryParams = {}): string {
+  const p = new URLSearchParams();
+  if (params.venue != null && params.venue !== "all") {
+    p.set("venue", String(params.venue));
+  }
+  if (params.season && params.season !== "ALL") p.set("season", params.season);
+  if (params.from) p.set("from", params.from);
+  if (params.to) p.set("to", params.to);
+  const s = p.toString();
+  return s ? `?${s}` : "";
+}
+
+/** GET /api/stats — StatsResponse をエンベロープ無しでそのまま返す */
+export const fetchStats = (params: StatsQueryParams = {}) =>
+  apiFetch<StatsResponse>(`/api/stats${buildStatsQuery(params)}`);
 
 // --- 設定・楽器・店舗（unit-07） --------------------------------------------
 
