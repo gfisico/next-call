@@ -109,16 +109,34 @@ compose の `image:` 既定は `ghcr.io/gfisico/next-call:latest`。オーナー
 
 `.env` は秘匿情報を含む。**コミット禁止**（`.gitignore` / `.dockerignore` で除外済み）。
 
-### 1.5 Google OAuth リダイレクト URI
+`.env` を変更しても `docker compose restart` では反映されない（既存コンテナの環境変数は
+起動時に固定されるため）。**必ず `docker compose up -d` でコンテナを作り直す。**
 
-Google Cloud Console → 該当 OAuth クライアント → 「承認済みのリダイレクト URI」に追加:
+### 1.5 Google OAuth クライアント
+
+OAuth クライアントは**自分専用サービス共通の Google Cloud プロジェクト**に集約している。
+プロジェクトと OAuth 同意画面は全サービスで 1 つ、クライアント ID / シークレットはサービスごとに
+1 つ発行する（1 台のサーバが侵害されても他サービスに波及させないため）。方式の全体像は
+共通レシピ（index-watcher リポジトリの `docs/google-auth-recipe.md`）を参照。
+
+- 種類: **ウェブアプリケーション**
+- 名前: `senkyoku`（コンソール内の管理ラベル。ログイン画面には表示されない）
+- 承認済みの JavaScript 生成元: **空欄**（サーバサイドの認可コードフローのため不要）
+- 承認済みのリダイレクト URI:
 
 ```
 https://<APP_DOMAIN>/api/auth/callback/google
 ```
 
+リダイレクト URI は Auth.js が `.env` の `AUTH_URL` から自動導出する（コード側に記述は無い）。
+**末尾スラッシュ 1 文字の差でも `redirect_uri_mismatch` になる**ため、サーバの `AUTH_URL` の
+実値を確認してからコピー貼り付けで登録すること。
+
 OAuth 同意画面の「テストユーザー」に、ログインするメール（`ALLOWED_EMAILS` の各アドレス）を
-追加すること（Testing モードのまま運用可・公開申請不要）。
+追加すること（Testing モードのまま運用可・公開申請不要）。同意画面はプロジェクト単位で全サービス
+共通のため、ログイン時に表示されるアプリ名は共通名になる（`senkyoku` とは表示されない）。
+
+クライアントを差し替える手順は §9.1。
 
 ### 1.6 DB ディレクトリの所有権（重要）
 
@@ -334,7 +352,8 @@ tail -f /var/log/nginx/access.log /var/log/nginx/error.log
 | --- | --- |
 | `SQLITE_CANTOPEN` で起動ループ | `/srv/next-call/data` の所有者が 1000:1000 か（§1.6） |
 | TLS が取得できない | DNS A レコード / パケットフィルター 80・443 / `nginx -t` / certbot ログ |
-| ログインできない | `.env` の `AUTH_URL` / Google のリダイレクト URI（§1.5） / テストユーザー / `ALLOWED_EMAILS` |
+| ログインできない | `.env` の `AUTH_URL` / Google のリダイレクト URI（§1.5） / テストユーザー / `ALLOWED_EMAILS` / `.env` 変更後に `up -d` したか（§1.4） |
+| Google アカウントが使えずログイン不能 | §9.2 のロックアウト復旧手順（`.env` の `ALLOWED_EMAILS` 差し替え） |
 | `/api/health` が 503 | `docker compose logs app`（DB マウント `/srv/next-call/data` の権限） |
 | 502/504（nginx） | app コンテナが healthy か / `curl http://127.0.0.1:3003/api/health` / `nginx -t` |
 | deploy ジョブが動かない | `vars.DEPLOY_ENABLED == 'true'` と Secrets（§2.2） |
@@ -351,3 +370,113 @@ tail -f /var/log/nginx/access.log /var/log/nginx/error.log
 HEALTHCHECK が curl/wget 非依存で `/api/health` を node で叩く・`next.config` の
 `output: "standalone"`）を静的に検査する。`tests/infra/backup-restore.test.ts`（vitest）から
 自動実行され、バックアップ/リストアのローテーション・ピン留め・整合性検証も併せてテストされる。
+
+---
+
+## 9. 認証の運用
+
+### 9.1 OAuth クライアントの差し替え
+
+Google Cloud のプロジェクトを移す、またはクライアントを再発行する場合、**コード変更は不要**。
+クライアント ID / シークレットは Auth.js が `.env` の `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`
+から解決しており、リポジトリにも GitHub Secrets にも実値は無い。
+
+1. VPS にログインし、リダイレクト URI を確定させるため実値を確認する。
+
+```
+grep -E '^(APP_DOMAIN|AUTH_URL|ALLOWED_EMAILS|AUTH_GOOGLE_ID)=' /srv/next-call/.env
+```
+
+2. Google Cloud Console で新しい OAuth クライアントを作る（条件は §1.5）。
+3. `.env` をバックアップする。
+
+```
+cp -a /srv/next-call/.env /srv/next-call/.env.bak.$(date +%Y%m%d%H%M%S)
+```
+
+4. 新しい値を書き込む。シェル履歴に残さないため変数経由で置換する。
+
+```
+read -r -p 'CLIENT_ID: ' NEW_ID
+```
+
+```
+sed -i "s|^AUTH_GOOGLE_ID=.*|AUTH_GOOGLE_ID=${NEW_ID}|" /srv/next-call/.env
+```
+
+```
+read -r -s -p 'CLIENT_SECRET: ' NEW_SECRET; echo
+```
+
+```
+sed -i "s|^AUTH_GOOGLE_SECRET=.*|AUTH_GOOGLE_SECRET=${NEW_SECRET}|" /srv/next-call/.env
+```
+
+5. 書き換わったことを検証する。**`sed` は対象行が存在しなくても成功終了する**ため省略しない。
+   クライアント ID は秘匿情報ではないのでそのまま表示してよい。
+
+```
+grep '^AUTH_GOOGLE_ID=' /srv/next-call/.env
+```
+
+```
+awk -F= '/^AUTH_GOOGLE_SECRET=/{print "secret length:", length($2)}' /srv/next-call/.env
+```
+
+6. 変数を消す。
+
+```
+unset NEW_ID NEW_SECRET
+```
+
+7. コンテナを作り直す（`restart` では反映されない。§1.4）。
+
+```
+cd /srv/next-call && docker compose up -d
+```
+
+8. **一度ログアウトしてから再ログインして検証する。** セッションは JWT（署名鍵は `AUTH_SECRET`）で
+   Google のクライアントとは独立しているため、ログインしたままでは差し替えの成否が分からない。
+   プロジェクトが変わると同意画面が再度表示される（正常）。
+9. 検証が通ってから、旧プロジェクト側の OAuth クライアントを削除する。
+
+失敗した場合は手順 3 のバックアップから戻す（世代は `ls /srv/next-call/.env.bak.*` で確認）。
+
+### 9.2 ロックアウト復旧
+
+パスワード認証は無く、ログイン手段は Google アカウントのみ。アカウントが使えなくなった場合は
+**サーバ側から許可メールを差し替えて復旧する**。このアプリは JWT セッション戦略でユーザー
+テーブルを持たない（`src/db/schema.ts` に users は無い）ため、DB 操作は不要で `.env` の
+書き換えだけで復旧できる。
+
+1. VPS にログインする。
+2. 現在の許可リストを確認する。
+
+```
+grep '^ALLOWED_EMAILS=' /srv/next-call/.env
+```
+
+3. 新しいメールアドレスに差し替える（カンマ区切りで複数可。未設定・空は全拒否のフェイルクローズ）。
+
+```
+read -r -p 'ALLOWED_EMAILS: ' NEW_EMAILS
+```
+
+```
+sed -i "s|^ALLOWED_EMAILS=.*|ALLOWED_EMAILS=${NEW_EMAILS}|" /srv/next-call/.env
+```
+
+4. 反映を検証する。
+
+```
+grep '^ALLOWED_EMAILS=' /srv/next-call/.env
+```
+
+5. コンテナを作り直す。
+
+```
+cd /srv/next-call && docker compose up -d
+```
+
+6. **新しいメールアドレスを OAuth 同意画面のテストユーザーにも追加する**（§1.5）。
+   ここを忘れると Google 側で「アクセスをブロック」となり、`.env` を直しても入れない。
