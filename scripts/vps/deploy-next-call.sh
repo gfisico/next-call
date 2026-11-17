@@ -14,6 +14,8 @@
 #   restrict,command="/usr/local/sbin/deploy-next-call" ssh-ed25519 … next-call-deploy
 
 set -euo pipefail
+# 接続元は LC_* を送れる（sshd の AcceptEnv）。コマンドの判定・記録・以降の処理をそれに左右されないよう C に固定する
+export LC_ALL=C
 
 APP_DIR=/srv/next-call
 
@@ -21,12 +23,13 @@ log() { echo "[deploy] $*"; }
 
 deny() {
   echo "deploy-next-call: 許可されていないコマンドです" >&2
-  # CMD は判定に使った値（コマンドなしのログインの試みでは空）。先に200文字に切ってから（長い入力で置き換えに
-  # 時間がかからないように）、改行などの制御文字を ? にして記録する。文字の判定は接続元が送るロケールに左右されないよう C で行う
-  local LC_ALL=C
-  local cmd="${CMD:-}"
-  cmd="${cmd:0:200}"
-  logger -t deploy-next-call "denied: ${cmd//[^[:print:]]/?}" 2>/dev/null || true
+  # CMD は判定に使った値（コマンドなしのログインの試みでは空）。先に200バイトに切ってから（長い入力で置き換えに
+  # 時間がかからないように）、改行などの制御文字と ASCII 以外のバイトを ? にして記録する。切ったときは元の長さを添える
+  local full="${CMD:-}"
+  local cmd="${full:0:200}"
+  local note=""
+  [ "${#full}" -le 200 ] || note=" (${#full} bytes, truncated)"
+  logger -t deploy-next-call "denied: ${cmd//[^[:print:]]/?}${note}" 2>/dev/null || true
   exit 126
 }
 
