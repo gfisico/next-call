@@ -238,6 +238,7 @@ certbot が `next-call` の設定を 443 対応に書き換え、80→443 リダ
   ```
 
 - 戻すとき（手動のデプロイ）：デプロイ用の鍵で、戻したい commit のイメージを送る。手順は自動のデプロイと同じ（`ssh -i <デプロイ用の鍵> <VPS> 'deploy ghcr.io/gfisico/next-call:<戻したい commit の SHA>'`）。root のシェルは要らない
+- 同時には1つしか動かない：スクリプトは鍵（`/run/deploy-next-call.lock`）を取れなければ待たずに「別のデプロイが動いています」で失敗する（待たせると、取り消された古い run が後から鍵を取り、新しい版の上に古いイメージを反映しうるため）。CI のデプロイ中に手動で戻そうとした場合や、取り消した run の VPS 側の処理がまだ残っている場合に起きる。少し待ってから、手動の戻しなら同じコマンドを、CI なら run をやり直す
 - 鍵を切り替えた後は、古い Secrets（`VPS_SSH_KEY`・`VPS_USER`）を消す（`gh secret delete VPS_SSH_KEY -R gfisico/next-call` など）。古い鍵は同じ VPS のほかのアプリと共有の root の鍵で、残すと制限の意味が無くなる。`gh secret list -R gfisico/next-call` に `VPS_HOST` と `VPS_DEPLOY_KEY` だけが残ることを確かめる
 - VPS のホスト鍵は `deploy.yml` の `VPS_HOST_KEY` に固定している。ホスト鍵を作り直したら直す
 - 外部のアクションは commit の SHA で固定している（版はコメント）。リポジトリの設定で、SHA で固定していないアクションは実行できない（`sha_pinning_required`）。SHA の更新は Dependabot（`.github/dependabot.yml`、公開から7日たった版だけ）が PR を作る

@@ -21,9 +21,12 @@ log() { echo "[deploy] $*"; }
 
 deny() {
   echo "deploy-next-call: 許可されていないコマンドです" >&2
-  # 未設定（コマンドなしのログインの試み）でも set -u で止まらず記録できるよう、既定値を付ける
-  local cmd="${SSH_ORIGINAL_COMMAND:-}"
-  logger -t deploy-next-call "denied: ${cmd:0:200}" 2>/dev/null || true
+  # CMD は判定に使った値（コマンドなしのログインの試みでは空）。先に200文字に切ってから（長い入力で置き換えに
+  # 時間がかからないように）、改行などの制御文字を ? にして記録する。文字の判定は接続元が送るロケールに左右されないよう C で行う
+  local LC_ALL=C
+  local cmd="${CMD:-}"
+  cmd="${cmd:0:200}"
+  logger -t deploy-next-call "denied: ${cmd//[^[:print:]]/?}" 2>/dev/null || true
   exit 126
 }
 
@@ -32,9 +35,10 @@ CMD="${SSH_ORIGINAL_COMMAND:-}"
 [[ "$CMD" =~ ^deploy\ (ghcr\.io/gfisico/next-call:[0-9a-f]{40})$ ]] || deny
 export APP_IMAGE="${BASH_REMATCH[1]}"
 
-# 同時に2つ動かさない。前の回（取り消された run の残りなど）が終わるまで最大5分待つ
+# 同時に2つ動かさない。待たずにすぐ失敗する
+# （待たせると、取り消された古い run が後から鍵を取り、新しい版の上に古いイメージを反映しうるため）
 exec 9>/run/deploy-next-call.lock
-flock -w 300 9 || { log "別のデプロイが5分たっても終わりません"; exit 1; }
+flock -n 9 || { log "別のデプロイが動いています"; exit 1; }
 
 cd "$APP_DIR"
 log "pulling $APP_IMAGE"
