@@ -1,0 +1,16 @@
+# GitHub Actions の外部アクションの SHA を更新する PR を作る（docs/ops.md §2.2）。
+# 公開から7日たった版だけを PR にする（公開直後を狙うサプライチェーン攻撃への対策）
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: tuesday
+      time: "02:00"
+      timezone: Asia/Tokyo
+    cooldown:
+      default-days: 7
+    groups:
+      actions-weekly:
+        patterns: ["*"]

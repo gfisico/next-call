@@ -37,7 +37,7 @@ next-call を Xserver VPS 上に Docker で運用するための手順書。初�
 ```
 quality (typecheck/lint/test/build)
    └─> image  (docker build → GHCR :latest / :<sha>)
-          └─> deploy (SSH → cd /srv/next-call && compose pull app && up -d → /api/health 60秒リトライ)
+          └─> deploy (SSH で `deploy <イメージ>` を送る → VPS の deploy-next-call が compose pull app && up -d → /api/health 60秒リトライ)
 ```
 
 `deploy` ジョブは **`vars.DEPLOY_ENABLED == 'true'` のときだけ**実行される。未設定なら
@@ -219,8 +219,28 @@ certbot が `next-call` の設定を 443 対応に書き換え、80→443 リダ
 | 名前 | 用途 |
 | --- | --- |
 | `VPS_HOST` | VPS のホスト名 / IP |
-| `VPS_USER` | SSH ユーザー |
-| `VPS_SSH_KEY` | SSH 秘密鍵（改行含む全文） |
+| `VPS_DEPLOY_KEY` | デプロイ専用の SSH 秘密鍵（改行含む全文）。VPS 側ではデプロイのスクリプトしか動かせない（下記） |
+
+**デプロイ用の鍵とスクリプト**（2026-11-17 から。それまでは同じ VPS のほかのアプリと共有の root の鍵で、任意のコマンドを送っていた）
+
+- VPS の root の `authorized_keys` に、次の形で登録する。この鍵でシェルや別のコマンドを送ると「許可されていないコマンドです」で断られる
+
+  ```
+  restrict,command="/usr/local/sbin/deploy-next-call" ssh-ed25519 AAAA… next-call-deploy
+  ```
+
+- `deploy` ジョブは `deploy ghcr.io/gfisico/next-call:<commit SHA>` だけを送り、VPS の `/usr/local/sbin/deploy-next-call`（元は `scripts/vps/deploy-next-call.sh`）が pull・up・ヘルスチェック・古いイメージの削除を行う
+- スクリプトはデプロイでは置き直さない（送られてくる中身で自分の許可を書き換えられないように）。変えたら、Mac のリポジトリのフォルダから、VPS の root で入れる管理用の鍵を使って置き直し、同じことを確かめる（`<VPS>` は `root@VPS のIP` か、`~/.ssh/config` の別名）
+
+  ```
+  ssh <VPS> 'T=$(mktemp) && cat > "$T" && bash -n "$T" && install -o root -g root -m 0755 "$T" /usr/local/sbin/deploy-next-call && rm -f "$T"' < scripts/vps/deploy-next-call.sh
+  ssh <VPS> 'cat /usr/local/sbin/deploy-next-call' | diff - scripts/vps/deploy-next-call.sh && echo same
+  ```
+
+- 戻すとき（手動のデプロイ）：デプロイ用の鍵で、戻したい commit のイメージを送る。手順は自動のデプロイと同じ（`ssh -i <デプロイ用の鍵> <VPS> 'deploy ghcr.io/gfisico/next-call:<戻したい commit の SHA>'`）。root のシェルは要らない
+- 鍵を切り替えた後は、古い Secrets（`VPS_SSH_KEY`・`VPS_USER`）を消す（`gh secret delete VPS_SSH_KEY -R gfisico/next-call` など）。古い鍵は同じ VPS のほかのアプリと共有の root の鍵で、残すと制限の意味が無くなる。`gh secret list -R gfisico/next-call` に `VPS_HOST` と `VPS_DEPLOY_KEY` だけが残ることを確かめる
+- VPS のホスト鍵は `deploy.yml` の `VPS_HOST_KEY` に固定している。ホスト鍵を作り直したら直す
+- 外部のアクションは commit の SHA で固定している（版はコメント）。リポジトリの設定で、SHA で固定していないアクションは実行できない（`sha_pinning_required`）。SHA の更新は Dependabot（`.github/dependabot.yml`、公開から7日たった版だけ）が PR を作る
 
 `DEPLOY_ENABLED` 未設定・Secrets 未整備でも `quality` と `image` は通る（フォーク安全）。
 GHCR への push は `GITHUB_TOKEN` を使うため追加 Secret 不要。

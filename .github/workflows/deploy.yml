@@ -21,8 +21,8 @@ jobs:
     name: quality (typecheck / lint / test / build)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: npm
@@ -44,7 +44,7 @@ jobs:
     outputs:
       image_sha: ${{ steps.meta.outputs.image_sha }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Compute lowercase image ref
         id: meta
@@ -53,17 +53,17 @@ jobs:
           echo "image=ghcr.io/${OWNER_LC}/${IMAGE_NAME}" >> "$GITHUB_OUTPUT"
           echo "image_sha=ghcr.io/${OWNER_LC}/${IMAGE_NAME}:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
 
       - name: Log in to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           context: .
           push: true
@@ -77,42 +77,47 @@ jobs:
     name: deploy to VPS
     needs: image
     runs-on: ubuntu-latest
+    # VPS 側でイメージの取得が止まっても、後続のデプロイを待たせ続けないように上限を置く
+    timeout-minutes: 15
     # Secrets/vars 未設定時はスキップ（有効な GitHub Actions 式）。
     if: ${{ vars.DEPLOY_ENABLED == 'true' }}
     steps:
+      # デプロイ用の鍵（VPS_DEPLOY_KEY）は、VPS 側で scripts/vps/deploy-next-call.sh しか動かせない。
+      # VPS のホスト鍵（ed25519 の公開鍵）を固定して確かめる（ランナーは毎回 known_hosts が空のため）。
+      # VPS のホスト鍵を作り直したら VPS_HOST_KEY を直す
+      - name: Set up SSH
+        env:
+          VPS_DEPLOY_KEY: ${{ secrets.VPS_DEPLOY_KEY }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_HOST_KEY: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIYI/qhiDvPF39s10FtBVvcXBIRxfr1TWGkqRq8jLrVm
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$VPS_DEPLOY_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          echo "next-call-vps $VPS_HOST_KEY" > ~/.ssh/known_hosts_vps
+          {
+            echo "Host vps"
+            echo "  HostName $VPS_HOST"
+            echo "  User root"
+            echo "  IdentityFile ~/.ssh/deploy_key"
+            echo "  IdentitiesOnly yes"
+            echo "  HostKeyAlias next-call-vps"
+            echo "  UserKnownHostsFile ~/.ssh/known_hosts_vps"
+            echo "  HostKeyAlgorithms ssh-ed25519"
+            echo "  StrictHostKeyChecking yes"
+            echo "  ConnectTimeout 20"
+            echo "  ServerAliveInterval 30"
+          } > ~/.ssh/config
+          chmod 600 ~/.ssh/config
+
+      # 直近 SHA のイメージを明示して pull/up（ロールバックの起点を一意にする）。手順は VPS のスクリプトが行う
       - name: Deploy over SSH
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          # 直近 SHA を明示ピンして pull/up。ロールバックの起点を一意にする。
-          envs: DEPLOY_IMAGE
-          script_stop: true
-          script: |
-            set -e
-            cd /srv/next-call
-            export APP_IMAGE="$DEPLOY_IMAGE"
-            echo "[deploy] pulling $APP_IMAGE"
-            docker compose pull app
-            docker compose up -d
-            # .env から公開ドメインを取得してヘルスチェック（最大 60 秒リトライ）。
-            APP_DOMAIN="$(grep -E '^APP_DOMAIN=' .env | cut -d= -f2-)"
-            HEALTH_URL="https://${APP_DOMAIN}/api/health"
-            echo "[deploy] health check: $HEALTH_URL"
-            ok=0
-            for i in $(seq 1 30); do
-              code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "$HEALTH_URL" || true)"
-              if [ "$code" = "200" ]; then ok=1; echo "[deploy] healthy after ${i} attempt(s)"; break; fi
-              echo "[deploy] attempt ${i}: HTTP ${code} — retrying in 2s"
-              sleep 2
-            done
-            if [ "$ok" != "1" ]; then
-              echo "[deploy] health check FAILED after 60s"
-              docker compose logs --tail=100 app
-              exit 1
-            fi
-            # 未使用の旧イメージを掃除（直前タグはロールバック用に残す）。
-            docker image prune -f
         env:
           DEPLOY_IMAGE: ${{ needs.image.outputs.image_sha }}
+        run: |
+          if ! [[ "$DEPLOY_IMAGE" =~ ^ghcr\.io/gfisico/next-call:[0-9a-f]{40}$ ]]; then
+            echo "イメージの名前が想定の形ではありません: $DEPLOY_IMAGE"
+            exit 1
+          fi
+          ssh vps "deploy $DEPLOY_IMAGE"
